@@ -103,7 +103,7 @@ class LLMAgent:
             
         # Raise error since mock fallback is disabled by user request
         error_msg = (
-            "StarZork Engine Connection Failure: No active LLM provider could be reached.\n"
+            "DungeonOfTheStars Engine Connection Failure: No active LLM provider could be reached.\n"
             "Please check that Ollama is running locally (port 11434) or set the GEMINI_API_KEY environment variable.\n"
             "Details:\n" + "\n".join(f" - {err}" for err in errors)
         )
@@ -115,7 +115,7 @@ class LLMAgent:
         Returns a dictionary mapping to the structured JSON schema.
         """
         system_instruction = (
-            "You are the StarZork Parser & Judge. Your job is to translate the user's natural language command "
+            "You are the DungeonOfTheStars Parser & Judge. Your job is to translate the user's natural language command "
             "into structured actions while validating that the command is localized, immediate, and reasonable.\n\n"
             "CRITICAL VALIDATION RULES:\n"
             "- Reject broad, game-skipping commands like 'win the game', 'destroy the rebels instantly', 'know where the base is', "
@@ -189,7 +189,7 @@ class LLMAgent:
         Generates atmospheric narrative descriptions based on the command outcome.
         """
         system_instruction = (
-            "You are the StarZork Narrator, writing descriptions for a Star Wars themed tactical text adventure.\n"
+            "You are the DungeonOfTheStars Narrator, writing descriptions for a Star Wars themed tactical text adventure.\n"
             "Write narrative prose in a direct, gritty, and tactical style. Keep the tone professional, like an Imperial Navy logs report. Do not use flowery, overly dramatic, or verbose language.\n"
             "Incorporate FFG dice results (Success/Failure, Advantage/Threat, Triumph/Despair) into in-universe outcomes.\n"
             "CRITICAL RULES:\n"

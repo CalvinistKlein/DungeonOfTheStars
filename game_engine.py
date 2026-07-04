@@ -4,21 +4,21 @@ import re
 import sys
 from datetime import datetime, timedelta
 
-# Add StarZork to path
-sys.path.append("/home/calvin/Documents/StarZork")
+# Add DungeonOfTheStars to path
+sys.path.append("/home/calvin/Documents/DungeonOfTheStars")
 
 from md_db import MarkdownDB
 from dice import roll_pool, pretty_print_results
 from llm_agent import LLMAgent
 
-GAME_DATA_DIR = "/home/calvin/Documents/StarZork/GameData"
-GAME_INFO_DIR = "/home/calvin/Documents/StarZork/Game_info"
+GAME_DATA_DIR = "/home/calvin/Documents/DungeonOfTheStars/GameData"
+GAME_INFO_DIR = "/home/calvin/Documents/DungeonOfTheStars/Game_info"
 PLAYER_FILE = os.path.join(GAME_DATA_DIR, "Player Data/Commodore_Nimrod_Heros.md")
 HISTORY_FILE = os.path.join(GAME_DATA_DIR, "game_history.json")
 
-class StarZorkEngine:
+class DungeonOfTheStarsEngine:
     def __init__(self):
-        self.llm = LLMAgent(config_path="/home/calvin/Documents/StarZork/config.json")
+        self.llm = LLMAgent(config_path="/home/calvin/Documents/DungeonOfTheStars/config.json")
         self.locations = self._load_locations()
         self.skills_map = self._load_skills_map()
         self.history = self._load_history()

@@ -46,7 +46,7 @@ StarZoink/
 ├── md_db.py                          # Markdown State Sync Engine
 ├── llm_agent.py                      # LLM Parser & Narrator Client
 ├── game_engine.py                    # Game Loop Controller
-└── starzork.py                       # Console UI Client (Rich)
+└── dungeonofthestars.py                       # Console UI Client (Rich)
 ```
 
 ---
@@ -93,5 +93,5 @@ The interface divides terminal windows into panels for player attributes, fleet 
 ### Starting the Game
 Run the command-line application from the repository root:
 ```bash
-python3 starzork.py
+python3 dungeonofthestars.py
 ```

@@ -1,0 +1,24 @@
+[
+  {
+    "turn": 1,
+    "timestamp": "09:12:13",
+    "player_command": "Fleet status update",
+    "dice_roll": null,
+    "state_changes": {
+      "fields": {},
+      "checklists": {}
+    },
+    "narrative": "Commander Vandar Kross tightens his grip on the tactical console, his fingers dancing over the holographic controls. Lt Cmdr Aris Thorne glances up from her display of Sworinta IV's atmosphere and terrain data. \"Current status,\" he demands.\n\nThe bridge buzzes with the steady hum of systems at full power. Kross leans in closer to scrutinize the green tactical displays, his eyes scanning for any anomalies amidst the normalcy. He rolls a die into the sand-filled trench beneath the bridge - **Advantage (4)**. The glow of the dice is caught by the green light illuminating the room, casting long shadows.\n\nThorne checks her readouts, nodding slightly at Kross' attentiveness. \"Sworinta IV's atmospheric conditions are stable,\" she reports, \"no significant shifts in weather patterns.\"\n\nThe tension on the bridge eases minutely as they confirm that the mission is proceeding according to plan. However, their peace is short-lived as a sudden **Threat (2)** appears - a ripple of static and static crackles through the comms system. A faint transmission from outlying vessels drifts in.\n\n\"Admiral on board? This is Star Destroyer *The Broken Sunrise*! Over.\" The transmission carries authority but also hints at urgency, prompting Kross to direct an immediate reply: \"Affirmative, we are here. Brief me,\" he barks into the comms array.\n\nThe bridge hums with activity as they prepare for incoming orders or instructions from the Admiral in question. But before any formal responses can be sent, the static fades away, and no more transmissions come through - leaving the bridge crew uncertain but prepared to act on whatever new information is forthcoming."
+  },
+  {
+    "turn": 2,
+    "timestamp": "09:22:07",
+    "player_command": "How many storm troopers do i have?",
+    "dice_roll": null,
+    "state_changes": {
+      "fields": {},
+      "checklists": {}
+    },
+    "narrative": "The bridge of *The Broken Sunrise* hums with a steady rhythm, its sub-surface console stations buzzing with activity. Commander Vandar Kross tightens his grip on the tactical console, his fingers dancing over the holographic controls. Lt Cmdr Aris Thorne glances up from her display of Sworinta IV's terrain and atmospheric data, nodding slightly at Kross' attentiveness.\n\nKross rolls a die into the sand-filled trench beneath the bridge - **Advantage (4)**. The glow of the dice is caught by the green light illuminating the room, casting long shadows across the deck. \n\nThorne checks her readouts, nodding again at Kross' careful scrutiny. \"Sworinta IV's atmospheric conditions are stable,\" she reports, \"no significant shifts in weather patterns.\" The tension on the bridge eases minutely as they confirm that the mission is proceeding according to plan.\n\nBut their peace is short-lived. A sudden **Threat (2)** appears - a ripple of static and static crackles through the comms system. A faint transmission from outlying vessels drifts in: \"Admiral on board? This is Star Destroyer *The Broken Sunrise*! Over.\"\n\nKross directs an immediate reply, his voice firm but urgent, \"Affirmative, we are here. Brief me,\" he barks into the comms array.\n\nThe bridge hums with activity as they prepare for incoming orders or instructions from the Admiral in question. But before any formal responses can be sent, the static fades away and no more transmissions come through - leaving the bridge crew uncertain but prepared to act on whatever new information is forthcoming."
+  }
+]
