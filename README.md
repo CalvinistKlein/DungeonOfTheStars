@@ -1,6 +1,6 @@
-# StarZoink
+# Dungeon of the Stars
 
-StarZoink is a text-based terminal roleplaying game engine governed by a hybrid system of deterministic mechanics and Large Language Models (LLMs). The game is set in the Star Wars universe and uses a simplified simulation of the Fantasy Flight Games (FFG) Star Wars RPG rules system.
+Dungeon of the Stars is a text-based terminal roleplaying game engine governed by a hybrid system of deterministic mechanics and Large Language Models (LLMs). The game is set in the Star Wars universe and uses a simplified simulation of the Fantasy Flight Games (FFG) Star Wars RPG rules system.
 
 The application features a command dashboard that reads and writes game states directly to a Markdown-based file system, acts as an in-universe judge for natural language commands, resolves skill checks using programmatic dice roll cancellation, and narrates outcomes dynamically.
 
@@ -23,7 +23,7 @@ The game loop is structured to achieve natural language command freedom while ma
 ## 2. Directory Structure
 
 ```
-StarZoink/
+DungeonOfTheStars/
 ├── GameData/                         # Dynamic Game State Database
 │   ├── Player Data/
 │   │   ├── Command Staff/
