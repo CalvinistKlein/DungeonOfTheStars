@@ -386,6 +386,10 @@ class DungeonOfTheStarsEngine:
         """Appends a new bullet point to campaign_chronicle.md and updates state."""
         os.makedirs(os.path.dirname(CHRONICLE_FILE), exist_ok=True)
         new_bullet = new_bullet.strip()
+        # Strip stray quotes, backticks, or code fences the LLM may wrap around the bullet
+        new_bullet = new_bullet.strip("'\"`")
+        # Remove duplicate leading bullet markers (e.g. "* * Foo" or "- * Foo")
+        new_bullet = re.sub(r'^[\*\-\s]+\*\s*', '* ', new_bullet)
         if new_bullet:
             if not new_bullet.startswith("*"):
                 new_bullet = f"* {new_bullet}"

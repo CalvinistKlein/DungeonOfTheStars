@@ -383,7 +383,7 @@ class DungeonOfTheStarsTUI:
                     continue
 
             # Standard mode checks
-            if command_clean in ("exit", "quit"):
+            if command_clean in ("exit", "quit", "/exit", "/back", "/quit"):
                 console.print("\n[yellow]Tactical interface deactivated. Safe travels, Commodore.[/yellow]\n")
                 break
             elif command_clean == "/settings":
