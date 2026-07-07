@@ -37,5 +37,16 @@
       "checklists": {}
     },
     "narrative": "**Bridge of The Broken Sunrise**\n\nCommander Vandar Kross turns from the viewport, eyes narrowing as he addresses the officer on duty. \"Shields up. Weapons charge and prep tie crew for combat. Further scan and see how many we are working with.\"\n\nLieutenant Commander Aris Thorne looks up from his console, concern etched on his face. \"Aye, sir! Shifting to defensive modes now. Scanning the area... and picking up two pirate vessels, approximately 30,000 meters off our port bow. They're moving in on the beacon's energy signature.\"\n\nThe comms system crackles to life as a voice speaks from an unknown location. \"This is Sworinta Reavers. We have your ship in our sights. You will surrender your cargo and personnel, or face destruction.\"\n\nCommander Kross' gaze sweeps across the bridge crew, his eyes locking onto Lieutenant Thorne. \"Make it happen, Lieutenant. Give me a count of enemy vessels and their armaments.\""
+  },
+  {
+    "turn": 4,
+    "timestamp": "10:44:09",
+    "player_command": "OPen comms. \"Are you Fools? This is an emirial Star Destroyer. You have three seconds to turn away or be destroyed",
+    "dice_roll": null,
+    "state_changes": {
+      "fields": {},
+      "checklists": {}
+    },
+    "narrative": "\"A single hunter following a phantom signal.\" Commander Vandar Kross' eyes narrowed as he watched the sensor data streaming across his console. The weak ping of the ancient Sith beacon had pinpointed its location to within 3 parsecs. A faint image of Sworinta IV's radioactive moon belts flickered on the viewport, an eerie backdrop for their operation.\n\n\"A ship following that same signal?\" Commander Kross asked, his voice low and commanding. \"Make it so.\" He turned to Lieutenant Commander Aris Thorne. \"Nav Officer, plot a course for the beacon station. Mask our presence in Sworinta IV's orbit. This is an Imperial Star Destroyer, not some derelict warship.\"\n\nThe Lieutenant Commander nodded, fingers flying across her console as she entered the coordinates into the ship's navigation system. \"Course set, sir. But... we're not alone out here.\" She glanced at the sensor data, her expression serious. \"Pirate scouts are closing in on our position.\"\n\nCommander Kross' eyes snapped back to the sensor display, his grip on his comms device tightening as he opened a channel to the bridge crew. \"All hands, report to your stations. Shields up, weapons charge and prep TIE crew for combat. Further scan and see how many we are working with.\""
   }
 ]

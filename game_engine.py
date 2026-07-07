@@ -146,7 +146,7 @@ class DungeonOfTheStarsEngine:
         command_clean = player_command.strip().lower()
         broad_terms = ["win the game", "win game", "skip to end", "destroy rebels instantly", "instantly defeat"]
         if any(term in command_clean for term in broad_terms):
-            rejection = "⚠️ **TACTICAL ERROR:** Commodore, strategic operations require execution of localized, immediate directives. Broad skips cannot be executed."
+            rejection = "**[TACTICAL ERROR]:** Commodore, strategic operations require execution of localized, immediate directives. Broad skips cannot be executed."
             # Append block to history without state changes
             self.history.append({
                 "turn": len(self.history) + 1,
@@ -186,7 +186,7 @@ class DungeonOfTheStarsEngine:
         
         # 6. Check validation
         if not parsed.get("valid", True):
-            rejection = f"⚠️ [TACTICAL REFUSAL] {parsed.get('rejection_reason', 'Cannot execute action.')}"
+            rejection = f"[TACTICAL REFUSAL] {parsed.get('rejection_reason', 'Cannot execute action.')}"
             self.history.append({
                 "turn": len(self.history) + 1,
                 "timestamp": datetime.now().strftime("%H:%M:%S"),
