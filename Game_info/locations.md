@@ -13,7 +13,7 @@ Exits are strictly enforced by the game engine, and descriptions are used to gui
     *   `quarters` (via Command Lift)
     *   `commons` (via Command Lift)
 *   **Description:** The command deck of the Imperial I-class Star Destroyer *The Broken Sunrise*. Pit crew technicians work at sub-surface console stations, and green tactical displays show Sworinta IV spinning slowly below. The viewport looks out over the nose of the massive wedge-shaped ship.
-*   **NPCs present:** `Commander_Vandar_Kross (XO)`, `Lt_Cmdr_Aris_Thorne (Nav Officer)`, `Lt Cmdr Aris Thorne (Nav Officer)`
+*   **NPCs present:** `Commander_Vandar_Kross (XO)`, `Lt_Cmdr_Aris_Thorne (Nav Officer)`, `Lt Cmdr Aris Thorne (Nav Officer)`, `pirate vessel`
 *   **Interactable Elements:**
     *   `command_console`: Access tactical map, flagship systems, and status reports.
     *   `holonet_transceiver`: Receive messages from the Imperial command or Emperor directly.

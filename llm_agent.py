@@ -60,7 +60,8 @@ class LLMAgent:
             "prompt": prompt,
             "stream": False,
             "options": {
-                "num_ctx": 4096
+                "num_ctx": 4096,
+                "num_predict": 1536
             }
         }
         
@@ -215,7 +216,7 @@ class LLMAgent:
             "- Do not repeat background information or location descriptions if they have not changed. Focus on the action itself and answering the query.\n"
             "- The story characters (and narration) must NEVER roll dice, mention dice, refer to dice, see stats, or mention tabletop mechanics. All dice rolls and rules happen outside the narrative world. Translate the dice outcomes purely into environmental events, mechanical failures, tactical changes, or physical reactions.\n"
             "- Advantage/Threat represent positive/negative side-effects. Triumph is a major boon, Despair is a major complication.\n"
-            "Keep descriptions concise and engaging (1-2 short paragraphs max)."
+            "Write detailed, thorough, and fully immersive descriptions (3-4 paragraphs or more). Ensure all parts of the action/order are completed and described in detail."
         )
         # Load campaign plot if available to guide acts and narrative branches
         campaign_context = ""
@@ -237,7 +238,7 @@ class LLMAgent:
             f"COMMAND:\n\"{command}\"\n\n"
             f"ACTION RESULT / STATE MUTATIONS / DICE ROLL:\n{json.dumps(action_result, indent=2)}\n\n"
             f"RECENT HISTORY & CAMPAIGN CHRONICLE:\n{json.dumps(history_data, indent=2)}\n\n"
-            "Generate the narrative prose now. Ensure you answer the player's query or resolve their command directly and concisely. Do not mention dice, rolls, or numbers."
+            "Generate the narrative prose now. Ensure you answer the player's query or resolve their command directly and thoroughly. Do not mention dice, rolls, or numbers."
         )
         
         return self.query(prompt, system_instruction, is_parser=False).strip()
