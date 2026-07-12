@@ -397,7 +397,12 @@ def run_command():
             elif kind == "done":
                 narration = val or ""
                 html = colorize_narrative_to_html(narration)
-                yield f"event: done\ndata: {json.dumps({'html': html, 'command': cmd})}\n\n"
+                in_scene = []
+                try:
+                    in_scene = list(getattr(engine, "last_in_scene", []) or [])
+                except Exception:
+                    pass
+                yield f"event: done\ndata: {json.dumps({'html': html, 'command': cmd, 'in_scene': in_scene})}\n\n"
                 break
 
     return Response(gen(), mimetype='text/event-stream',
@@ -851,6 +856,7 @@ def get_set_settings():
         cfg["PARSER_MODEL"] = data.get("PARSER_MODEL", cfg.get("PARSER_MODEL", ""))
         cfg["NARRATOR_MODEL"] = data.get("NARRATOR_MODEL", cfg.get("NARRATOR_MODEL", cfg.get("PARSER_MODEL", "")))
         cfg["SHOW_DICE_CHECKS"] = bool(data.get("SHOW_DICE_CHECKS", cfg.get("SHOW_DICE_CHECKS", False)))
+        cfg["NPC_BRAINS"] = bool(data.get("NPC_BRAINS", cfg.get("NPC_BRAINS", False)))
         
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
@@ -861,6 +867,7 @@ def get_set_settings():
                 engine.llm.ollama_url = cfg["OLLAMA_URL"]
                 engine.llm.parser_model = cfg["PARSER_MODEL"]
                 engine.llm.narrator_model = cfg["NARRATOR_MODEL"] or cfg["PARSER_MODEL"]
+                engine.npc_brains_enabled = cfg["NPC_BRAINS"]
                 if hasattr(engine, "rag") and engine.rag is not None:
                     engine.rag.ollama_url = cfg["OLLAMA_URL"]
             except Exception as e:

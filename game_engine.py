@@ -2,6 +2,7 @@ import json
 import os
 import re
 import sys
+import threading
 from datetime import datetime, timedelta
 
 # Add project root to path
@@ -12,6 +13,7 @@ from md_db import MarkdownDB
 from dice import roll_pool, pretty_print_results
 from llm_agent import LLMAgent
 from rag_engine import RagEngine
+import npc_brains
 
 GAME_DATA_DIR = os.path.join(BASE_DIR, "GameData")
 GAME_INFO_DIR = os.path.join(BASE_DIR, "Game_info")
@@ -35,6 +37,10 @@ class DungeonOfTheStarsEngine:
         # Safe by default (only explicit, in-range statements). Set NARRATION_STATE_PARSE=false
         # in config.json to disable entirely (engine remains source of truth).
         self.auto_parse_stats = self._load_config_flag("NARRATION_STATE_PARSE", True)
+        # NPC "brain" layer (director selection + deferred VibeThinker memory).
+        # Read live each turn so toggling config.json takes effect without restart.
+        self.npc_brains_enabled = self._load_config_flag("NPC_BRAINS", False)
+        self.last_in_scene = []
 
     def get_initial_narrative(self):
         if not self.initial_narrative:
@@ -404,6 +410,43 @@ class DungeonOfTheStarsEngine:
         # In history, log time advancement
         time_elapsed = parsed.get("time_elapsed_minutes", 1)
         
+        # 9.5 NPC BRAINS — director selects in-scene NPCs, load ONLY their brains (isolated)
+        self.npc_brains_enabled = self._load_config_flag("NPC_BRAINS", False)
+        brain_context = None
+        selected_ids = []
+        in_scene_names = []
+        if self.npc_brains_enabled:
+            try:
+                scene_text = (
+                    f"LOCATION: {loc_data.get('name', 'Unknown')}\n"
+                    f"{loc_data.get('description', '')}\n\n"
+                    "RECENT PLAYER COMMANDS:\n"
+                    + "\n".join(f"- {h.get('player_command', '')}" for h in self.history[-3:])
+                    + f"\n\nCURRENT COMMAND: {player_command}"
+                )
+                selected_ids = npc_brains.director_select(scene_text, self.llm)
+                if selected_ids:
+                    brain_context, in_scene_names = npc_brains.assemble_context(selected_ids)
+                    ok, leak = npc_brains.assert_isolation(brain_context, selected_ids)
+                    if not ok:
+                        print(f"[brains] ISOLATION VIOLATION by {leak}; dropping context")
+                        brain_context, selected_ids, in_scene_names = None, [], []
+            except Exception as e:
+                print(f"[brains] director/context failed: {e}")
+                brain_context, selected_ids, in_scene_names = None, [], []
+        self.last_in_scene = in_scene_names
+
+        # Fallback: if the director produced nothing (e.g. a transient Ollama error),
+        # still ground the scene with the ever-present bridge crew so the brain layer
+        # never silently disappears.
+        if self.npc_brains_enabled and not selected_ids:
+            selected_ids = ["vandar_kross", "aris_thorne"]
+            try:
+                brain_context, in_scene_names = npc_brains.assemble_context(selected_ids)
+                self.last_in_scene = in_scene_names
+            except Exception:
+                brain_context, selected_ids, in_scene_names = None, [], []
+
         # 10. Generate Narration via LLM Narrator
         action_outcome = {
             "success": True if not roll_results else roll_results["is_success"],
@@ -416,14 +459,16 @@ class DungeonOfTheStarsEngine:
         if stream_callback:
             chunks = []
             for tok in self.llm.generate_narration(
-                player_command, action_outcome, loc_data, history_context, stream=True
+                player_command, action_outcome, loc_data, history_context, stream=True,
+                brain_context=brain_context
             ):
                 chunks.append(tok)
                 stream_callback(tok)
             narration = "".join(chunks)
         else:
             narration = self.llm.generate_narration(
-                player_command, action_outcome, loc_data, history_context
+                player_command, action_outcome, loc_data, history_context,
+                brain_context=brain_context
             )
         
         # 10a. Scan narration for dynamic stats and update files in real-time (optional, config-gated)
@@ -444,7 +489,31 @@ class DungeonOfTheStarsEngine:
             "narrative": narration
         })
         self._save_history()
-        
+
+        # 11.5 Deferred NPC memory consolidation (off the hot path).
+        # VibeThinker loads only for this pass, then is evicted from VRAM.
+        if self.npc_brains_enabled and selected_ids:
+            try:
+                event = (
+                    f"COMMAND: {player_command}\n"
+                    f"NARRATION:\n{narration[:800]}\n"
+                    f"STATE CHANGES: {json.dumps(state_updates)}\n"
+                )
+                _ids = list(selected_ids)
+                _llm = self.llm
+
+                def _deferred_memory():
+                    for nid in _ids:
+                        try:
+                            npc_brains.append_turn(nid, event)
+                            npc_brains.compact_brain(nid, _llm)
+                        except Exception as ex:
+                            print(f"[brains] deferred memory failed for {nid}: {ex}")
+
+                threading.Thread(target=_deferred_memory, daemon=True).start()
+            except Exception as e:
+                print(f"[brains] could not schedule deferred memory: {e}")
+
         return narration
 
     def _load_config_flag(self, name, default):

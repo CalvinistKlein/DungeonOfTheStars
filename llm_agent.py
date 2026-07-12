@@ -24,6 +24,9 @@ class LLMAgent:
         self.parser_model = DEFAULT_PARSER_MODEL
         self.narrator_model = DEFAULT_NARRATOR_MODEL
         self.embed_model = DEFAULT_EMBED_MODEL
+        # Brain-layer models (NPC director + deferred memory consolidation)
+        self.brain_model = DEFAULT_NARRATOR_MODEL
+        self.director_model = DEFAULT_NARRATOR_MODEL
 
         # Auto-discover config.json next to this module if not supplied
         # (prevents silent fallback to hardcoded defaults when LLMAgent()
@@ -49,6 +52,8 @@ class LLMAgent:
                 self.parser_model = cfg.get("PARSER_MODEL", self.parser_model)
                 self.narrator_model = cfg.get("NARRATOR_MODEL", self.narrator_model) or self.parser_model
                 self.embed_model = cfg.get("EMBED_MODEL", self.embed_model)
+                self.brain_model = cfg.get("BRAIN_MODEL", self.brain_model)
+                self.director_model = cfg.get("DIRECTOR_MODEL", self.director_model)
             except Exception as e:
                 print(f"Warning: Failed to load config.json: {e}")
 
@@ -164,6 +169,19 @@ class LLMAgent:
             "Details:\n" + "\n".join(f" - {err}" for err in errors)
         )
         raise ConnectionError(error_msg)
+
+    def ask_model(self, prompt, model, system=None, stream=False, num_predict=1024):
+        """
+        Direct Ollama completion with an explicitly chosen model (used by the
+        NPC brain layer: director selection + deferred memory consolidation).
+        Returns a string (stream=False) or a generator (stream=True).
+        """
+        if not self._is_ollama_running():
+            raise ConnectionError(f"Ollama not running at {self.ollama_url}")
+        out = self._call_ollama(prompt, model, system, stream=stream, num_predict=num_predict)
+        if stream:
+            return out
+        return out.strip()
 
     # ------------------------------------------------------------------ #
     # JSON extraction helper (robust against prose / code fences)
@@ -302,7 +320,7 @@ class LLMAgent:
     # ------------------------------------------------------------------ #
     # Narrator
     # ------------------------------------------------------------------ #
-    def generate_narration(self, command, action_result, location_data, history_data, stream=False):
+    def generate_narration(self, command, action_result, location_data, history_data, stream=False, brain_context=None):
         """
         Generates atmospheric narrative descriptions based on the command outcome.
         Returns a string (stream=False) or a generator of text chunks (stream=True).
@@ -342,7 +360,14 @@ class LLMAgent:
             f"COMMAND:\n\"{command}\"\n\n"
             f"ACTION RESULT / STATE MUTATIONS / DICE ROLL:\n{json.dumps(action_result, indent=2)}\n\n"
             f"RECENT HISTORY & CAMPAIGN CHRONICLE:\n{json.dumps(history_data, indent=2)}\n\n"
-            "Generate the narrative prose now. Ensure you answer the player's query or resolve their command directly and thoroughly. Do not mention dice, rolls, or numbers."
+        )
+        if brain_context:
+            prompt += f"{brain_context}\n\n"
+        prompt += (
+            "Generate the narrative prose now. Ensure you answer the player's query or resolve their command "
+            "directly and thoroughly. Ground every in-scene NPC's words and behaviour in their private brain "
+            "notes above so they stay consistent with their history, relationships, and secrets. "
+            "Do not mention dice, rolls, or numbers."
         )
 
         return self.query(prompt, system_instruction, is_parser=False, stream=stream).strip() if not stream \

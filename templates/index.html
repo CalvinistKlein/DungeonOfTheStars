@@ -794,6 +794,12 @@
                         <span>Display Tabletop Dice Outcomes</span>
                     </label>
                 </div>
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="setting-brains">
+                        <span>Enable NPC Brains (director + persistent memory)</span>
+                    </label>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn" onclick="closeOverlay('overlay-settings')">Cancel</button>
@@ -1056,6 +1062,13 @@
             try { obj = JSON.parse(data); } catch (e) { return; }
             if (event === 'done') {
                 content.innerHTML = obj.html;
+                if (Array.isArray(obj.in_scene) && obj.in_scene.length) {
+                    const tag = document.createElement('div');
+                    tag.className = 'in-scene-tag';
+                    tag.textContent = '◎ IN SCENE: ' + obj.in_scene.join(', ');
+                    tag.style.cssText = 'margin-top:6px;font-size:0.72rem;letter-spacing:0.04em;color:#7a9acc;opacity:0.85;text-transform:uppercase;';
+                    content.parentNode.appendChild(tag);
+                }
             } else if (obj.token !== undefined) {
                 content.textContent += obj.token;
                 scrollToBottom();
@@ -1146,6 +1159,7 @@
                 document.getElementById('setting-model').value = data.PARSER_MODEL;
                 document.getElementById('setting-narrator').value = data.NARRATOR_MODEL || data.PARSER_MODEL;
                 document.getElementById('setting-dice').checked = data.SHOW_DICE_CHECKS;
+                document.getElementById('setting-brains').checked = !!data.NPC_BRAINS;
             } catch (err) {
                 console.error("Failed to read current config:", err);
             }
@@ -1156,12 +1170,13 @@
             const model = document.getElementById('setting-model').value.trim();
             const narrator = document.getElementById('setting-narrator').value.trim();
             const dice = document.getElementById('setting-dice').checked;
+            const brains = document.getElementById('setting-brains').checked;
 
             try {
                 const res = await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ OLLAMA_URL: url, PARSER_MODEL: model, NARRATOR_MODEL: narrator, SHOW_DICE_CHECKS: dice })
+                    body: JSON.stringify({ OLLAMA_URL: url, PARSER_MODEL: model, NARRATOR_MODEL: narrator, SHOW_DICE_CHECKS: dice, NPC_BRAINS: brains })
                 });
                 const data = await res.json();
                 if (data.status === 'ok') {

@@ -1,26 +1,11 @@
-# Python compilation files
+# Runtime-generated NPC memory (re-seeded by npc_brains.py on first run)
+GameData/NPC Brains/
+
+# Benchmark / test scratch files
+bench_final.txt
+bench_out.txt
+bench_result.txt
+
+# Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-
-# Virtual environment
-venv/
-.venv/
-env/
-
-# Game logs, configs, and history
-import.log
-config.json
-GameData/game_history.json
-GameData/campaign_chronicle.md
-
-# Game saves and runtime dynamic NPCs
-GameData/Saves/
-GameData/NPC Data/
-
-# Large Wookieepedia XML dumps and database folders
-starwars_pages_current.xml
-wookepedia-dump
-StarWars_Wookepedia_*/
-KnowledgeBase/
