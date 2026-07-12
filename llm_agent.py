@@ -25,6 +25,17 @@ class LLMAgent:
         self.narrator_model = DEFAULT_NARRATOR_MODEL
         self.embed_model = DEFAULT_EMBED_MODEL
 
+        # Auto-discover config.json next to this module if not supplied
+        # (prevents silent fallback to hardcoded defaults when LLMAgent()
+        #  is instantiated without a config_path).
+        if not config_path:
+            _here = os.path.dirname(os.path.abspath(__file__))
+            for cand in (os.path.join(_here, "config.json"),
+                         os.path.join(os.getcwd(), "config.json")):
+                if os.path.exists(cand):
+                    config_path = cand
+                    break
+
         # Load config.json if present
         if config_path and os.path.exists(config_path):
             try:
