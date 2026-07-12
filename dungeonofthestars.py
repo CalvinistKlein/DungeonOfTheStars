@@ -6,6 +6,7 @@ import webbrowser
 import threading
 import re
 import queue
+import shutil
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, Response
 
@@ -894,6 +895,97 @@ def manual_save():
         except Exception as e:
             return jsonify({"status": "error", "message": str(e)}), 500
     return jsonify({"status": "error", "message": "Engine not running"}), 400
+
+
+# ---------- Named Saves (full game state + narrative context) ----------
+SAVES_DIR = os.path.join(BASE_DIR, "Saves")
+os.makedirs(SAVES_DIR, exist_ok=True)
+
+def _safe_save_name(name):
+    name = (name or "").strip()
+    name = re.sub(r"[^A-Za-z0-9 _-]", "", name)
+    name = name.replace(" ", "_")
+    return name[:48]
+
+@app.route('/api/save_game', methods=['POST'])
+def save_game():
+    data = request.json or {}
+    name = _safe_save_name(data.get("name"))
+    if not name:
+        return jsonify({"status": "error", "message": "Invalid save name"}), 400
+    src = os.path.join(BASE_DIR, "GameData")
+    if not os.path.isdir(src):
+        return jsonify({"status": "error", "message": "No game state to save yet"}), 400
+    dest = os.path.join(SAVES_DIR, name, "GameData")
+    try:
+        if os.path.isdir(dest):
+            shutil.rmtree(dest)
+        shutil.copytree(src, dest)
+        manifest = {
+            "name": name,
+            "created": datetime.now().isoformat(timespec="seconds"),
+            "parser": getattr(engine.llm, "parser_model", "") if engine else "",
+            "narrator": getattr(engine.llm, "narrator_model", "") if engine else "",
+            "director": getattr(engine.llm, "director_model", "") if engine else "",
+            "brain": getattr(engine.llm, "brain_model", "") if engine else "",
+            "npc_brains": engine.npc_brains_enabled if engine else False,
+        }
+        with open(os.path.join(SAVES_DIR, name, "manifest.json"), "w") as f:
+            json.dump(manifest, f, indent=2)
+        return jsonify({"status": "ok", "message": f"Saved slot '{name}' (game + NPC context)."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/saves', methods=['GET'])
+def list_saves():
+    out = []
+    if os.path.isdir(SAVES_DIR):
+        for d in sorted(os.listdir(SAVES_DIR)):
+            dp = os.path.join(SAVES_DIR, d)
+            if os.path.isdir(dp):
+                man = {}
+                try:
+                    with open(os.path.join(dp, "manifest.json")) as f:
+                        man = json.load(f)
+                except Exception:
+                    pass
+                out.append({
+                    "name": d,
+                    "created": man.get("created", ""),
+                    "npc_brains": man.get("npc_brains", False),
+                    "narrator": man.get("narrator", ""),
+                })
+    return jsonify(out)
+
+@app.route('/api/load_game', methods=['POST'])
+def load_game():
+    global engine
+    data = request.json or {}
+    name = _safe_save_name(data.get("name"))
+    src = os.path.join(SAVES_DIR, name, "GameData")
+    if not name or not os.path.isdir(src):
+        return jsonify({"status": "error", "message": "Save slot not found"}), 404
+    try:
+        dest = os.path.join(BASE_DIR, "GameData")
+        shutil.copytree(src, dest, dirs_exist_ok=True)
+        engine = DungeonOfTheStarsEngine()
+        try:
+            engine.get_initial_narrative()
+        except Exception:
+            pass
+        return jsonify({"status": "ok", "message": f"Loaded slot '{name}'. Story continues."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/delete_save', methods=['POST'])
+def delete_save():
+    data = request.json or {}
+    name = _safe_save_name(data.get("name"))
+    dp = os.path.join(SAVES_DIR, name)
+    if name and os.path.isdir(dp):
+        shutil.rmtree(dp)
+        return jsonify({"status": "ok", "message": f"Deleted slot '{name}'."})
+    return jsonify({"status": "error", "message": "Save slot not found"}), 404
 
 
 def open_browser():

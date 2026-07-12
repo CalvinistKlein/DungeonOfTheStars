@@ -711,6 +711,7 @@
                 <button class="btn" id="btn-ship">🚀 Ship Schematic</button>
                 <button class="btn" id="btn-settings">⚙️ Console Config</button>
                 <button class="btn" id="btn-save">💾 Manual Save</button>
+                <button class="btn" id="btn-saves">📚 Saved Games</button>
                 <button class="btn btn-restart" id="btn-restart">🔄 Reset Campaign</button>
             </div>
         </div>
@@ -1188,6 +1189,128 @@
                 alert("Failed to save new configuration options.");
             }
         });
+        // Saved Games
+        document.getElementById('btn-saves').addEventListener('click', () => {
+            openOverlay('overlay-saves');
+            refreshSaves();
+        });
+
+        async function refreshSaves() {
+            try {
+                const res = await fetch('/api/saves');
+                const saves = await res.json();
+                const list = document.getElementById('saves-list');
+                const empty = document.getElementById('saves-empty');
+                list.innerHTML = '';
+                if (!saves.length) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                saves.forEach(s => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px; background:var(--md-sys-color-surface-variant); border-radius:8px;';
+                    const info = document.createElement('div');
+                    info.style.cssText = 'font-size:0.85rem;';
+                    info.innerHTML = `<div style="font-weight:600;">${s.name}</div><div style="color:var(--md-sys-color-on-surface-variant);">${s.created || ''}${s.npc_brains ? ' · 🧠 brains' : ''}</div>`;
+                    const ctrls = document.createElement('div');
+                    ctrls.style.cssText = 'display:flex; gap:6px;';
+                    const loadBtn = document.createElement('button');
+                    loadBtn.className = 'btn';
+                    loadBtn.textContent = 'Load';
+                    loadBtn.onclick = () => doLoadSave(s.name);
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-restart';
+                    delBtn.textContent = 'Delete';
+                    delBtn.onclick = () => doDeleteSave(s.name);
+                    ctrls.appendChild(loadBtn);
+                    ctrls.appendChild(delBtn);
+                    row.appendChild(info);
+                    row.appendChild(ctrls);
+                    list.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Failed to load saves list', err);
+            }
+        }
+
+        document.getElementById('btn-do-save').addEventListener('click', async () => {
+            const name = document.getElementById('save-name').value.trim();
+            if (!name) { alert('Enter a save name first.'); return; }
+            try {
+                const res = await fetch('/api/save_game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                appendHistoryItem('', `<span style="color: var(--md-sys-color-primary); font-weight: 500;">💾 ${data.message || data.status}</span>`);
+                scrollToBottom();
+                document.getElementById('save-name').value = '';
+                refreshSaves();
+            } catch (err) {
+                alert('Failed to save game.');
+            }
+        });
+
+        async function doLoadSave(name) {
+            if (!confirm(`Load save "${name}"? Current unsaved progress will be overwritten.`)) return;
+            try {
+                const res = await fetch('/api/load_game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    closeOverlay('overlay-saves');
+                    await fetchHistory();
+                    await fetchStatus();
+                    appendHistoryItem('', `<span style="color: var(--md-sys-color-primary); font-weight: 500;">📚 ${data.message}</span>`);
+                    scrollToBottom();
+                } else {
+                    alert(data.message || 'Load failed.');
+                }
+            } catch (err) {
+                alert('Failed to load save.');
+            }
+        }
+
+        async function doDeleteSave(name) {
+            if (!confirm(`Delete save "${name}"? This cannot be undone.`)) return;
+            try {
+                await fetch('/api/delete_save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                refreshSaves();
+            } catch (err) {
+                alert('Failed to delete save.');
+            }
+        }
+
     </script>
+    <!-- Saved Games Modal -->
+    <div class="overlay" id="overlay-saves">
+        <div class="modal" style="max-width: 540px;">
+            <div class="modal-header">
+                <div>📚 Saved Games &amp; Context</div>
+                <button class="modal-close" onclick="closeOverlay('overlay-saves')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <input type="text" class="input-field" id="save-name" placeholder="Name this save (e.g. BattleOfEndor)..." autocomplete="off" style="flex: 1;">
+                    <button class="btn" id="btn-do-save">💾 Save Current</button>
+                </div>
+                <div id="saves-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                <div id="saves-empty" style="color: var(--md-sys-color-on-surface-variant); font-size: 0.85rem;">No saves yet. Play a bit, then save your campaign + NPC context.</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeOverlay('overlay-saves')">Close</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
