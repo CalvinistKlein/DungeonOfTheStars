@@ -387,18 +387,28 @@ class LLMAgent:
 
 
 
-        # Prior events as a single flowing sentence (HTML stripped)
-        if history_data:
+        # History context (engine passes a dict: {recent_turns:[...], campaign_chronicle:str})
+        if isinstance(history_data, dict):
+            chronicle = history_data.get("campaign_chronicle") or ""
+            turns = history_data.get("recent_turns") or []
+        else:
+            chronicle = ""
+            turns = history_data if isinstance(history_data, (list, tuple)) else []
+        if chronicle and str(chronicle).strip():
+            ctx.append("Campaign chronicle so far: " + str(chronicle).strip()[-1500:])
+        if isinstance(turns, (list, tuple)):
             bits = []
-            for h in history_data[-5:]:
+            for h in turns[-5:]:
                 if not isinstance(h, dict):
                     continue
                 c = h.get("player_command") or h.get("command") or ""
                 n = re.sub(r"<[^>]+>", "", str(h.get("narrative") or h.get("html") or ""))
                 if c and n:
-                    bits.append(f"earlier the Commodore ordered '{c}' and {n}")
+                    bits.append(f"the Commodore ordered '{c}' and {n}")
+                elif c:
+                    bits.append(f"the Commodore ordered '{c}'")
             if bits:
-                ctx.append("What has happened so far this session: " + "; ".join(bits) + ".")
+                ctx.append("Recent turns: " + "; ".join(bits) + ".")
 
         prompt = "\n".join(ctx) + "\n\n"
         if brain_context:
