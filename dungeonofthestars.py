@@ -24,30 +24,27 @@ engine = None
 
 # Global helper to colorize Rich tags to HTML spans
 def colorize_narrative_to_html(text: str) -> str:
-    """Applies premium HTML styling to dialogue speakers, highlights body-text names, and highlights actions."""
-    # 1. Parse dialogue speech blocks into temporary markup tags
+    """Converts dialogue speaker tags to styled HTML. No body-name/place highlighting."""
     paragraphs = re.split(r'\n\s*\n', text)
     processed_paragraphs = []
-    
-    known_speakers = ["KROSS", "THORNE", "VANCE", "THUL", "GORN", "GRORN", "HEROS", "VOSS", "INQUISITOR", "COMMODORE", "OFFICER", "CREW", "TROOPER", "REBEL", "PIRATE", "MUTINEER", "SITH"]
-    
+
+    known_speakers = ["KROSS","THORNE","VANCE","THUL","GORN","GRORN","HEROS","VOSS","INQUISITOR","COMMODORE","OFFICER","CREW","TROOPER","REBEL","PIRATE","MUTINEER","SITH"]
+
     for para in paragraphs:
         para = para.strip()
         if not para:
             continue
-            
+
         dialogue_found = False
         speaker = ""
         speech_body = ""
-        
-        # A. Try matching bracketed speaker: <SPEAKER> ...
+
         match_bracket = re.match(r'^<([a-zA-Z0-9\s\-\_\.]+)>:?\s*(.*)$', para, re.DOTALL)
         if match_bracket:
             speaker = match_bracket.group(1).strip()
             speech_body = match_bracket.group(2).strip()
             dialogue_found = True
         else:
-            # B. Try matching unbracketed speaker with colon: "COMMANDER VANDAR KROSS: ..."
             match_colon = re.match(r'^([a-zA-Z0-9\s\-\_\.]+):(?:\s+|\n)(.*)$', para, re.DOTALL)
             if match_colon:
                 possible_speaker = match_colon.group(1).strip()
@@ -56,98 +53,35 @@ def colorize_narrative_to_html(text: str) -> str:
                     speaker = possible_speaker
                     speech_body = match_colon.group(2).strip()
                     dialogue_found = True
-                    
+
         if dialogue_found:
-            name_upper = speaker.upper()
-            if "COMMODORE" in name_upper or "HEROS" in name_upper:
-                color_class = "bold-cyan"
-                hex_color = "#4fc3f7"
-            elif any(k in name_upper for k in ("KROSS", "THORNE", "VANCE", "THUL", "GORN", "GRORN", "OFFICER", "TROOPER", "CREW", "IMPERIAL")):
-                color_class = "bold-green"
-                hex_color = "#81c784"
-            elif any(k in name_upper for k in ("REBEL", "PIRATE", "PRISONER", "SITH", "MUTINEER", "ESCAPE", "INQUISITOR", "VOSS")):
-                color_class = "bold-red"
-                hex_color = "#ff8a80"
-            else:
-                color_class = "bold-yellow"
-                hex_color = "#ffd54f"
-                
+            # Single muted matte accent for the speaker label - no bright faction colors
             dialogue_html = (
-                f"[speech_container hex={hex_color}]"
-                f"[speech_speaker class={color_class}]{speaker}[/speech_speaker]"
+                f"[speech_container hex=#7a9acc]"
+                f"[speech_speaker class=speaker]{speaker}[/speech_speaker]"
                 f"[speech_text]{speech_body}[/speech_text]"
                 f"[/speech_container]"
             )
             processed_paragraphs.append(dialogue_html)
         else:
             processed_paragraphs.append(para)
-            
+
     text = "\n\n".join(processed_paragraphs)
 
-    # 2. Highlight key character names inside the body text safely
-    names_to_highlight = [
-        (r"\b(Commodore\s+Heros|Commodore\s+Nimrod\s+Heros|Nimrod\s+Heros)\b", "bold cyan"),
-        (r"\b(Commander\s+Vandar\s+Kross|Commander\s+Kross|Vandar\s+Kross|Kross)\b", "bold green"),
-        (r"\b(Lt\.\s+Cmdr\.\s+Aris\s+Thorne|Lt\.\s+Commander\s+Thorne|Aris\s+Thorne|Thorne)\b", "bold green"),
-        (r"\b(Lt\.\s+Cmdr\.\s+Titus\s+Thul|Lt\.\s+Commander\s+Thul|Titus\s+Thul|Thul)\b", "bold green"),
-        (r"\b(Lt\.\s+Commander\s+Vance|Lt\.\s+Cmdr\.\s+Vance|Vance)\b", "bold green"),
-        (r"\b(Commander\s+Grorn|Squad\s+Gorn|Squad\s+Grorn|Grorn|Gorn)\b", "bold green"),
-        (r"\b(Rebel\s+Agent\s+Kira\s+Voss|Kira\s+Voss|Voss)\b", "bold red"),
-        (r"\b(Imperial\s+Inquisitor|Inquisitor)\b", "bold red"),
-    ]
-    
-    def highlight_word_safely(src_text, word_regex, color):
-        flags = 0
-        wr = word_regex
-        if wr.startswith('(?i)'):
-            flags = re.IGNORECASE
-            wr = wr[4:]
-        pattern = re.compile(r'(\\[[^\]]+\]|[^\\[\\]\\s]*' + wr + r'[^\\[\\]\\s]*)', flags)
-        def replace(match):
-            val = match.group(1)
-            if val.startswith('['):
-                return val
-            inner_match = re.search(wr, val, flags)
-            if inner_match:
-                matched_name = inner_match.group(1)
-                return val.replace(matched_name, f"[{color}]{matched_name}[/{color}]")
-            return val
-        return pattern.sub(replace, src_text)
-
-    for word_regex, color in names_to_highlight:
-        text = highlight_word_safely(text, word_regex, color)
-
-    # 3. Highlight locations separately
-    locations_to_highlight = [
-        (r"(?i)\b(Bridge|Quarters|Hangar|Brig|The\s+Brig|Engineering)\b", "bold orange"),
-        (r"(?i)\b(Sworinta\s+IV|Sworinta\s+IV\s+Orbit|Sworinta\s+IV\s+Surface|Deep\s+Space|Orbit|Surface)\b", "bold orange"),
-        (r"(?i)\b(Sith\s+Beacon|Derelict\s+Warship|Anomaly\s+/\s+Distress\s+Call)\b", "bold orange"),
-    ]
-    for loc_regex, color in locations_to_highlight:
-        text = highlight_word_safely(text, loc_regex, color)
-
-    # 4. Highlight movement/action phrases
-    action_verbs = [
-        r"\b(walks|runs|moves|jumps|relocates|travels|flies|heads|goes|arrives|departs)\s+(?:to|towards|into|from|for|at)\b",
-        r"\b(relocated\s+to|moved\s+to|traveled\s+to|entered\s+the|exited\s+the|arrived\s+at)\b"
-    ]
-    for verb_pat in action_verbs:
-        text = highlight_word_safely(text, verb_pat, "bold magenta")
-
-    # 5. Escape HTML characters to avoid script/element injection but preserve markdown brackets
+    # Escape HTML characters but preserve our bracket markup
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-    # 6. Convert bracket syntax to html spans
+    # Convert bracket syntax to html spans
     text = re.sub(r'\[bold (\w+)\]', r'<span class="bold-\1">', text)
     text = re.sub(r'\[/bold (\w+)\]', r'</span>', text)
     text = re.sub(r'\[(\w+)\]', r'<span class="\1">', text)
     text = re.sub(r'\[/(\w+)\]', r'</span>', text)
 
-    # 7. Convert markdown bold syntax and header HTML
+    # Convert markdown bold syntax and header HTML
     text = re.sub(r'\*\*(.*?)\*\*', r'<span class="bold-yellow">\1</span>', text)
     text = re.sub(r'###\s*(.*)', r'<span class="bold-yellow" style="font-size: 1.05rem; text-decoration: underline; display: block; margin-top: 10px; margin-bottom: 5px;">\1</span>', text)
 
-    # 8. Convert our temporary speech container bracket syntax to actual styled HTML divs
+    # Convert our temporary speech container bracket syntax to actual styled HTML divs
     text = re.sub(r'\[speech_container hex=([^\]]+)\]', r'<div class="speech-container" style="--dialogue-color: \1;">', text)
     text = text.replace('[/speech_container]', '</div>')
     text = re.sub(r'\[speech_speaker class=([^\]]+)\]', r'<div class="speech-speaker \1">', text)
@@ -155,7 +89,7 @@ def colorize_narrative_to_html(text: str) -> str:
     text = text.replace('[speech_text]', '<div class="speech-text">')
     text = text.replace('[/speech_text]', '</div>')
 
-    # 9. Convert newlines to break tags
+    # Convert newlines to break tags
     text = text.replace('\n', '<br>')
     return text
 
