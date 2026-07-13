@@ -19,6 +19,7 @@ from game_engine import DungeonOfTheStarsEngine
 from dice import pretty_print_results
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 engine = None
 
 # Global helper to colorize Rich tags to HTML spans
