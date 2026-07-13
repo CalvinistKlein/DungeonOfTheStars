@@ -133,7 +133,7 @@ class LLMAgent:
         except Exception:
             return False
 
-    def query(self, prompt, system_instruction=None, is_parser=True, stream=False):
+    def query(self, prompt, system_instruction=None, is_parser=True, stream=False, num_predict=None):
         """
         Executes query targeting Gemini -> Ollama.
         Returns a string (stream=False) or a generator of text chunks (stream=True,
@@ -152,7 +152,7 @@ class LLMAgent:
         if self._is_ollama_running():
             try:
                 model = self.parser_model if is_parser else self.narrator_model
-                num_predict = 1024 if is_parser else 2048
+                num_predict = num_predict if num_predict else (1024 if is_parser else 2048)
                 if stream and not is_parser:
                     return self._call_ollama(prompt, model, system_instruction,
                                              stream=True, num_predict=num_predict)
@@ -327,7 +327,7 @@ class LLMAgent:
         """
         system_instruction = (
             "You are the DungeonOfTheStars Narrator, writing descriptions for a Star Wars themed tactical text adventure.\n"
-            "Write narrative prose in a direct, gritty, and tactical style. Keep the tone professional, like an Imperial Navy logs report. Do not use flowery, overly dramatic, or verbose language.\n"
+            "Write lean, punchy prose: short sentences, plain direct language, no padding or piled-up adjectives. Gritty Imperial-log tone. Do not use flowery, overly dramatic, or verbose language.\n"
             "Incorporate FFG dice results (Success/Failure, Advantage/Threat, Triumph/Despair) into in-universe outcomes.\n"
             "CRITICAL RULES - DIRECT EXECUTION & DIALOGUE:\n"
             "- DIRECT RESPONSE AND DIALOGUE: Your narrative MUST directly address and answer the player's immediate statement, command, or query. If the player asks a question to Kross or any NPC, that NPC MUST answer directly in dialogue. Never write a generic response that ignores or skips over the dialogue. If the player says something, NPCs must respond directly to what was said.\n"
@@ -338,7 +338,8 @@ class LLMAgent:
             "- Do not repeat background information or location descriptions if they have not changed. Focus on the action itself and answering the query.\n"
             "- The story characters (and narration) must NEVER roll dice, mention dice, refer to dice, see stats, or mention tabletop mechanics. All dice rolls and rules happen outside the narrative world. Translate the dice outcomes purely into environmental events, mechanical failures, tactical changes, or physical reactions.\n"
             "- Advantage/Threat represent positive/negative side-effects. Triumph is a major boon, Despair is a major complication.\n"
-            "Write detailed, thorough, and fully immersive descriptions (3-4 paragraphs or more). Ensure all parts of the action/order are completed and described in detail."
+            "- OUTPUT FORMAT: Write ONLY the narrative prose. Never repeat the world-state, dice results, history, or any prompt section header. No JSON, no bullet lists, no meta-commentary.\n"
+            "LENGTH: 1-3 short paragraphs (roughly 60-140 words). One clear scene beat per turn. Let actions and dialogue carry it. Do not pad to reach a length."
         )
         # Load campaign plot if available to guide acts and narrative branches
         campaign_context = ""
@@ -351,27 +352,67 @@ class LLMAgent:
             except Exception:
                 pass
 
-        prompt = ""
-        if campaign_context:
-            prompt += f"CAMPAIGN PLOT GUIDE & ACT OUTLINE:\n{campaign_context}\n\n"
-
-        prompt += (
-            f"LOCATION:\n{json.dumps(location_data, indent=2)}\n\n"
-            f"COMMAND:\n\"{command}\"\n\n"
-            f"ACTION RESULT / STATE MUTATIONS / DICE ROLL:\n{json.dumps(action_result, indent=2)}\n\n"
-            f"RECENT HISTORY & CAMPAIGN CHRONICLE:\n{json.dumps(history_data, indent=2)}\n\n"
+        # --- Build context as flowing prose (labeled sections get parroted by small models) ---
+        ctx = []
+        ctx.append(
+            "You are the narrator for a Star Wars Imperial text adventure set on the bridge "
+            "of the Imperial I-class Star Destroyer The Broken Sunrise."
         )
+        if campaign_context:
+            ctx.append("Campaign context: " + campaign_context)
+
+        if isinstance(location_data, dict):
+            ctx.append(f"The Commodore is on the {location_data.get('name', '')} — {location_data.get('description', '')}")
+        else:
+            ctx.append(f"The Commodore is on: {location_data}")
+
+        ctx.append(f'The Commodore just gave this order: "{command}".')
+
+        # Outcome as a short prose sentence (no JSON, no raw numbers)
+        ar = action_result if isinstance(action_result, dict) else {}
+        dr = ar.get("dice_roll") if isinstance(ar, dict) else None
+        if dr and isinstance(dr, dict):
+            res = "succeeded" if dr.get("is_success") else "failed"
+            side = []
+            if dr.get("advantage"): side.append("a positive side effect")
+            if dr.get("threat"): side.append("a complication")
+            if dr.get("triumph"): side.append("a major boon")
+            if dr.get("despair"): side.append("a major complication")
+            dice_txt = f"A skill check {res}" + (f", with {', '.join(side)}" if side else "") + "."
+        elif ar.get("dice_roll_str"):
+            dice_txt = f"A skill check resolved: {ar['dice_roll_str']}."
+        else:
+            dice_txt = "No roll was required."
+        ctx.append(dice_txt)
+
+
+
+        # Prior events as a single flowing sentence (HTML stripped)
+        if history_data:
+            bits = []
+            for h in history_data[-5:]:
+                if not isinstance(h, dict):
+                    continue
+                c = h.get("player_command") or h.get("command") or ""
+                n = re.sub(r"<[^>]+>", "", str(h.get("narrative") or h.get("html") or ""))
+                if c and n:
+                    bits.append(f"earlier the Commodore ordered '{c}' and {n}")
+            if bits:
+                ctx.append("What has happened so far this session: " + "; ".join(bits) + ".")
+
+        prompt = "\n".join(ctx) + "\n\n"
         if brain_context:
             prompt += f"{brain_context}\n\n"
         prompt += (
-            "Generate the narrative prose now. Ensure you answer the player's query or resolve their command "
-            "directly and thoroughly. Ground every in-scene NPC's words and behaviour in their private brain "
-            "notes above so they stay consistent with their history, relationships, and secrets. "
-            "Do not mention dice, rolls, or numbers."
+            "Write the next beat of the story now. A few plain, direct sentences. "
+            "The COMMAND above is the Commodore's own action — narrate what happens because of it; "
+            "do NOT quote the command back as dialogue. If the order involves or addresses another character, "
+            "show their response with an UPPERCASE speaker header on its own line followed by the line of dialogue. "
+            "Do not repeat or reference this setup, and output no JSON, lists, or headers."
         )
 
-        return self.query(prompt, system_instruction, is_parser=False, stream=stream).strip() if not stream \
-            else self.query(prompt, system_instruction, is_parser=False, stream=True)
+        return self.query(prompt, system_instruction, is_parser=False, stream=stream, num_predict=800).strip() if not stream \
+            else self.query(prompt, system_instruction, is_parser=False, stream=True, num_predict=800)
 
     def summarize_turn(self, command, narration, state_changes):
         """
@@ -490,8 +531,8 @@ class LLMAgent:
         Generates a long, highly detailed atmospheric introduction prose for a new game session.
         """
         system_instruction = (
-            "You are the DungeonOfTheStars Narrator. Your task is to write a highly detailed, dramatic, and atmospheric "
-            "introductory prose (3-5 paragraphs) to start the campaign.\n"
+            "You are the DungeonOfTheStars Narrator. Your task is to write a tight, atmospheric "
+            "introductory prose (2-3 paragraphs) to start the campaign.\n"
             "Establish a gritty, militaristic, and ominous tone suited for an Imperial Navy commander in the Outer Rim.\n"
             "Do not output any JSON, markdown headers, or suggested actions. Just write the descriptive narrative prose directly."
         )
