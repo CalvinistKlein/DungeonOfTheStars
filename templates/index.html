@@ -332,26 +332,31 @@
         .orange { color: #ffe0b2; }
         .white { color: #ffffff; }
 
-        /* Speech / Dialogue Box styling */
+        /* Speech / Dialogue Box styling - chat-style message blurbs */
         .speech-container {
             background: var(--md-sys-color-surface-container-high);
-            border-left: 4px solid var(--dialogue-color, var(--md-sys-color-primary));
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-left: 3px solid var(--dialogue-color, #7a9acc);
             border-radius: 6px;
-            padding: 12px 16px;
-            margin: 14px 0;
-            box-shadow: var(--md-elevation-1);
+            padding: 10px 14px;
+            margin: 16px 0;
         }
         .speech-speaker {
+            display: inline-block;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
+            letter-spacing: 1.2px;
+            color: #7a9acc;
+            background: rgba(122, 154, 204, 0.14);
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
         }
         .speech-text {
-            font-style: italic;
+            font-style: normal;
             color: var(--md-sys-color-on-surface);
-            line-height: 1.45;
+            line-height: 1.5;
         }
 
         /* Terminal Input Area */

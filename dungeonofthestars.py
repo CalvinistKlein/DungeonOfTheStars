@@ -71,6 +71,14 @@ def colorize_narrative_to_html(text: str) -> str:
     # Escape HTML characters but preserve our bracket markup
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
+    # Convert our temporary speech container bracket syntax to actual styled HTML divs (before generic bracket pass)
+    text = re.sub(r'\[speech_container hex=([^\]]+)\]', r'<div class="speech-container" style="--dialogue-color: \1;">', text)
+    text = text.replace('[/speech_container]', '</div>')
+    text = re.sub(r'\[speech_speaker class=([^\]]+)\]', r'<div class="speech-speaker \1">', text)
+    text = text.replace('[/speech_speaker]', '</div>')
+    text = text.replace('[speech_text]', '<div class="speech-text">')
+    text = text.replace('[/speech_text]', '</div>')
+
     # Convert bracket syntax to html spans
     text = re.sub(r'\[bold (\w+)\]', r'<span class="bold-\1">', text)
     text = re.sub(r'\[/bold (\w+)\]', r'</span>', text)
@@ -80,14 +88,6 @@ def colorize_narrative_to_html(text: str) -> str:
     # Convert markdown bold syntax and header HTML
     text = re.sub(r'\*\*(.*?)\*\*', r'<span class="bold-yellow">\1</span>', text)
     text = re.sub(r'###\s*(.*)', r'<span class="bold-yellow" style="font-size: 1.05rem; text-decoration: underline; display: block; margin-top: 10px; margin-bottom: 5px;">\1</span>', text)
-
-    # Convert our temporary speech container bracket syntax to actual styled HTML divs
-    text = re.sub(r'\[speech_container hex=([^\]]+)\]', r'<div class="speech-container" style="--dialogue-color: \1;">', text)
-    text = text.replace('[/speech_container]', '</div>')
-    text = re.sub(r'\[speech_speaker class=([^\]]+)\]', r'<div class="speech-speaker \1">', text)
-    text = text.replace('[/speech_speaker]', '</div>')
-    text = text.replace('[speech_text]', '<div class="speech-text">')
-    text = text.replace('[/speech_text]', '</div>')
 
     # Convert newlines to break tags
     text = text.replace('\n', '<br>')
