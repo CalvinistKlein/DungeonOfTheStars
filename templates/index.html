@@ -640,8 +640,40 @@
             display: none;
         }
 
+        /* Drawer close bar (hidden on desktop, shown in mobile drawer) */
+        .drawer-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 2px 2px 14px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--md-sys-color-on-surface-variant);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .drawer-close {
+            background: transparent;
+            border: none;
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .drawer-close:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--md-sys-color-on-surface);
+        }
+
         /* ===== Mobile / Touch Optimization ===== */
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             body {
                 height: 100dvh;
             }
@@ -661,6 +693,13 @@
             }
             .hdr-toggle {
                 display: inline-flex;
+            }
+            #btn-status-toggle {
+                position: relative;
+                z-index: 160; /* lift above the dim backdrop so it can toggle closed */
+            }
+            .drawer-bar {
+                display: flex;
             }
             main {
                 flex-direction: column;
@@ -773,7 +812,7 @@
             }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 600px) {
             .header-meta {
                 display: none;
             }
@@ -806,6 +845,10 @@
     <main>
         <!-- Left Side Dashboard -->
         <div class="sidebar">
+            <div class="drawer-bar">
+                <span>Command Status</span>
+                <button type="button" class="drawer-close" id="drawer-close" aria-label="Close status">&times;</button>
+            </div>
             <!-- Command Profile -->
             <div class="panel">
                 <div class="panel-header">Active Commandant</div>
@@ -1475,6 +1518,8 @@
         document.getElementById('btn-status-toggle').addEventListener('click', () => {
             sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar();
         });
+        const drawerClose = document.getElementById('drawer-close');
+        if (drawerClose) drawerClose.addEventListener('click', closeSidebar);
         backdropEl.addEventListener('click', closeSidebar);
         document.querySelectorAll('.control-panel .btn').forEach(b => {
             b.addEventListener('click', closeSidebar);
