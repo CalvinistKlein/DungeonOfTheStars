@@ -45,7 +45,7 @@ def colorize_narrative_to_html(text: str) -> str:
             speech_body = match_bracket.group(2).strip()
             dialogue_found = True
         else:
-            match_colon = re.match(r'^([a-zA-Z0-9\s\-\_\.]+):(?:\s+|\n)(.*)$', para, re.DOTALL)
+            match_colon = re.match(r'^([a-zA-Z0-9\s\-\_\.]+)(?::|")\s*(.*)$', para, re.DOTALL)
             if match_colon:
                 possible_speaker = match_colon.group(1).strip()
                 poss_upper = possible_speaker.upper()
@@ -55,10 +55,19 @@ def colorize_narrative_to_html(text: str) -> str:
                     dialogue_found = True
 
         if dialogue_found:
-            # Single muted matte accent for the speaker label - no bright faction colors
+            # Color-code the speaker by faction so dialogue reads like a chat bubble
+            name_upper = speaker.upper()
+            if "COMMODORE" in name_upper or "HEROS" in name_upper:
+                color_class = "bold-cyan"; hex_color = "#4fc3f7"
+            elif any(k in name_upper for k in ("KROSS", "THORNE", "VANCE", "THUL", "GORN", "GRORN", "OFFICER", "TROOPER", "CREW", "IMPERIAL")):
+                color_class = "bold-green"; hex_color = "#81c784"
+            elif any(k in name_upper for k in ("REBEL", "PIRATE", "PRISONER", "SITH", "MUTINEER", "ESCAPE", "INQUISITOR", "VOSS")):
+                color_class = "bold-red"; hex_color = "#ff8a80"
+            else:
+                color_class = "bold-yellow"; hex_color = "#ffd54f"
             dialogue_html = (
-                f"[speech_container hex=#7a9acc]"
-                f"[speech_speaker class=speaker]{speaker}[/speech_speaker]"
+                f"[speech_container hex={hex_color}]"
+                f"[speech_speaker class={color_class}]{speaker}[/speech_speaker]"
                 f"[speech_text]{speech_body}[/speech_text]"
                 f"[/speech_container]"
             )

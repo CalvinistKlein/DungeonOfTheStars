@@ -335,6 +335,7 @@
         /* Speech / Dialogue Box styling - chat-style message blurbs */
         .speech-container {
             background: var(--md-sys-color-surface-container-high);
+            background: color-mix(in srgb, var(--dialogue-color, #7a9acc) 7%, var(--md-sys-color-surface-container-high));
             border: 1px solid var(--md-sys-color-outline-variant);
             border-left: 3px solid var(--dialogue-color, #7a9acc);
             border-radius: 6px;
@@ -344,14 +345,13 @@
         .speech-speaker {
             display: inline-block;
             font-weight: 700;
-            font-size: 0.72rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 1.2px;
-            color: #7a9acc;
-            background: rgba(122, 154, 204, 0.14);
             padding: 2px 8px;
             border-radius: 4px;
             margin-bottom: 8px;
+            background: color-mix(in srgb, currentColor 16%, transparent);
         }
         .speech-text {
             font-style: normal;
