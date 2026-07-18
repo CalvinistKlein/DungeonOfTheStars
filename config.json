@@ -1,6 +1,9 @@
 {
-  "OLLAMA_URL": "192.168.1.121:11434",
+  "OLLAMA_URL": "100.76.79.36:11434",
   "PARSER_MODEL": "dante_dante159/gary_gigax:latest",
-  "NARRATOR_MODEL": "dante_dante159/gary_gigax:latest",
-  "SHOW_DICE_CHECKS": false
+  "NARRATOR_MODEL": "aratan/gemma-4-E4B-it-heretic:latest",
+  "DIRECTOR_MODEL": "aratan/gemma-4-E4B-it-heretic:latest",
+  "BRAIN_MODEL": "hf.co/prithivMLmods/VibeThinker-3B-GGUF:Q4_K_M",
+  "NPC_BRAINS": true,
+  "SHOW_DICE_CHECKS": true
 }

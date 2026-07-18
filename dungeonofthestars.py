@@ -5,8 +5,10 @@ import json
 import webbrowser
 import threading
 import re
+import queue
+import shutil
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 
 # Add project root to path
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,35 +19,33 @@ from game_engine import DungeonOfTheStarsEngine
 from dice import pretty_print_results
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 engine = None
 
 # Global helper to colorize Rich tags to HTML spans
 def colorize_narrative_to_html(text: str) -> str:
-    """Applies premium HTML styling to dialogue speakers, highlights body-text names, and highlights actions."""
-    # 1. Parse dialogue speech blocks into temporary markup tags
+    """Converts dialogue speaker tags to styled HTML. No body-name/place highlighting."""
     paragraphs = re.split(r'\n\s*\n', text)
     processed_paragraphs = []
-    
-    known_speakers = ["KROSS", "THORNE", "VANCE", "THUL", "GORN", "GRORN", "HEROS", "VOSS", "INQUISITOR", "COMMODORE", "OFFICER", "CREW", "TROOPER", "REBEL", "PIRATE", "MUTINEER", "SITH"]
-    
+
+    known_speakers = ["KROSS","THORNE","VANCE","THUL","GORN","GRORN","HEROS","VOSS","INQUISITOR","COMMODORE","OFFICER","CREW","TROOPER","REBEL","PIRATE","MUTINEER","SITH"]
+
     for para in paragraphs:
         para = para.strip()
         if not para:
             continue
-            
+
         dialogue_found = False
         speaker = ""
         speech_body = ""
-        
-        # A. Try matching bracketed speaker: <SPEAKER> ...
+
         match_bracket = re.match(r'^<([a-zA-Z0-9\s\-\_\.]+)>:?\s*(.*)$', para, re.DOTALL)
         if match_bracket:
             speaker = match_bracket.group(1).strip()
             speech_body = match_bracket.group(2).strip()
             dialogue_found = True
         else:
-            # B. Try matching unbracketed speaker with colon: "COMMANDER VANDAR KROSS: ..."
-            match_colon = re.match(r'^([a-zA-Z0-9\s\-\_\.]+):(?:\s+|\n)(.*)$', para, re.DOTALL)
+            match_colon = re.match(r'^([a-zA-Z0-9\s\-\_\.]+)(?::|")\s*(.*)$', para, re.DOTALL)
             if match_colon:
                 possible_speaker = match_colon.group(1).strip()
                 poss_upper = possible_speaker.upper()
@@ -53,22 +53,18 @@ def colorize_narrative_to_html(text: str) -> str:
                     speaker = possible_speaker
                     speech_body = match_colon.group(2).strip()
                     dialogue_found = True
-                    
+
         if dialogue_found:
+            # Color-code the speaker by faction so dialogue reads like a chat bubble
             name_upper = speaker.upper()
             if "COMMODORE" in name_upper or "HEROS" in name_upper:
-                color_class = "bold-cyan"
-                hex_color = "#4fc3f7"
+                color_class = "bold-cyan"; hex_color = "#4fc3f7"
             elif any(k in name_upper for k in ("KROSS", "THORNE", "VANCE", "THUL", "GORN", "GRORN", "OFFICER", "TROOPER", "CREW", "IMPERIAL")):
-                color_class = "bold-green"
-                hex_color = "#81c784"
+                color_class = "bold-green"; hex_color = "#81c784"
             elif any(k in name_upper for k in ("REBEL", "PIRATE", "PRISONER", "SITH", "MUTINEER", "ESCAPE", "INQUISITOR", "VOSS")):
-                color_class = "bold-red"
-                hex_color = "#ff8a80"
+                color_class = "bold-red"; hex_color = "#ff8a80"
             else:
-                color_class = "bold-yellow"
-                hex_color = "#ffd54f"
-                
+                color_class = "bold-yellow"; hex_color = "#ffd54f"
             dialogue_html = (
                 f"[speech_container hex={hex_color}]"
                 f"[speech_speaker class={color_class}]{speaker}[/speech_speaker]"
@@ -78,68 +74,13 @@ def colorize_narrative_to_html(text: str) -> str:
             processed_paragraphs.append(dialogue_html)
         else:
             processed_paragraphs.append(para)
-            
+
     text = "\n\n".join(processed_paragraphs)
 
-    # 2. Highlight key character names inside the body text safely
-    names_to_highlight = [
-        (r"\b(Commodore\s+Heros|Commodore\s+Nimrod\s+Heros|Nimrod\s+Heros)\b", "bold cyan"),
-        (r"\b(Commander\s+Vandar\s+Kross|Commander\s+Kross|Vandar\s+Kross|Kross)\b", "bold green"),
-        (r"\b(Lt\.\s+Cmdr\.\s+Aris\s+Thorne|Lt\.\s+Commander\s+Thorne|Aris\s+Thorne|Thorne)\b", "bold green"),
-        (r"\b(Lt\.\s+Cmdr\.\s+Titus\s+Thul|Lt\.\s+Commander\s+Thul|Titus\s+Thul|Thul)\b", "bold green"),
-        (r"\b(Lt\.\s+Commander\s+Vance|Lt\.\s+Cmdr\.\s+Vance|Vance)\b", "bold green"),
-        (r"\b(Commander\s+Grorn|Squad\s+Gorn|Squad\s+Grorn|Grorn|Gorn)\b", "bold green"),
-        (r"\b(Rebel\s+Agent\s+Kira\s+Voss|Kira\s+Voss|Voss)\b", "bold red"),
-        (r"\b(Imperial\s+Inquisitor|Inquisitor)\b", "bold red"),
-    ]
-    
-    def highlight_word_safely(src_text, word_regex, color):
-        pattern = re.compile(r'(\[[^\]]+\]|[^\[\]\s]*' + word_regex + r'[^\[\]\s]*)')
-        def replace(match):
-            val = match.group(1)
-            if val.startswith('['):
-                return val
-            inner_match = re.search(word_regex, val)
-            if inner_match:
-                matched_name = inner_match.group(1)
-                return val.replace(matched_name, f"[{color}]{matched_name}[/{color}]")
-            return val
-        return pattern.sub(replace, src_text)
-
-    for word_regex, color in names_to_highlight:
-        text = highlight_word_safely(text, word_regex, color)
-
-    # 3. Highlight locations separately
-    locations_to_highlight = [
-        (r"(?i)\b(Bridge|Quarters|Hangar|Brig|The\s+Brig|Engineering)\b", "bold orange"),
-        (r"(?i)\b(Sworinta\s+IV|Sworinta\s+IV\s+Orbit|Sworinta\s+IV\s+Surface|Deep\s+Space|Orbit|Surface)\b", "bold orange"),
-        (r"(?i)\b(Sith\s+Beacon|Derelict\s+Warship|Anomaly\s+/\s+Distress\s+Call)\b", "bold orange"),
-    ]
-    for loc_regex, color in locations_to_highlight:
-        text = highlight_word_safely(text, loc_regex, color)
-
-    # 4. Highlight movement/action phrases
-    action_verbs = [
-        r"\b(walks|runs|moves|jumps|relocates|travels|flies|heads|goes|arrives|departs)\s+(?:to|towards|into|from|for|at)\b",
-        r"\b(relocated\s+to|moved\s+to|traveled\s+to|entered\s+the|exited\s+the|arrived\s+at)\b"
-    ]
-    for verb_pat in action_verbs:
-        text = highlight_word_safely(text, verb_pat, "bold magenta")
-
-    # 5. Escape HTML characters to avoid script/element injection but preserve markdown brackets
+    # Escape HTML characters but preserve our bracket markup
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
-    # 6. Convert bracket syntax to html spans
-    text = re.sub(r'\[bold (\w+)\]', r'<span class="bold-\1">', text)
-    text = re.sub(r'\[/bold (\w+)\]', r'</span>', text)
-    text = re.sub(r'\[(\w+)\]', r'<span class="\1">', text)
-    text = re.sub(r'\[/(\w+)\]', r'</span>', text)
-
-    # 7. Convert markdown bold syntax and header HTML
-    text = re.sub(r'\*\*(.*?)\*\*', r'<span class="bold-yellow">\1</span>', text)
-    text = re.sub(r'###\s*(.*)', r'<span class="bold-yellow" style="font-size: 1.05rem; text-decoration: underline; display: block; margin-top: 10px; margin-bottom: 5px;">\1</span>', text)
-
-    # 8. Convert our temporary speech container bracket syntax to actual styled HTML divs
+    # Convert our temporary speech container bracket syntax to actual styled HTML divs (before generic bracket pass)
     text = re.sub(r'\[speech_container hex=([^\]]+)\]', r'<div class="speech-container" style="--dialogue-color: \1;">', text)
     text = text.replace('[/speech_container]', '</div>')
     text = re.sub(r'\[speech_speaker class=([^\]]+)\]', r'<div class="speech-speaker \1">', text)
@@ -147,7 +88,17 @@ def colorize_narrative_to_html(text: str) -> str:
     text = text.replace('[speech_text]', '<div class="speech-text">')
     text = text.replace('[/speech_text]', '</div>')
 
-    # 9. Convert newlines to break tags
+    # Convert bracket syntax to html spans
+    text = re.sub(r'\[bold (\w+)\]', r'<span class="bold-\1">', text)
+    text = re.sub(r'\[/bold (\w+)\]', r'</span>', text)
+    text = re.sub(r'\[(\w+)\]', r'<span class="\1">', text)
+    text = re.sub(r'\[/(\w+)\]', r'</span>', text)
+
+    # Convert markdown bold syntax and header HTML
+    text = re.sub(r'\*\*(.*?)\*\*', r'<span class="bold-yellow">\1</span>', text)
+    text = re.sub(r'###\s*(.*)', r'<span class="bold-yellow" style="font-size: 1.05rem; text-decoration: underline; display: block; margin-top: 10px; margin-bottom: 5px;">\1</span>', text)
+
+    # Convert newlines to break tags
     text = text.replace('\n', '<br>')
     return text
 
@@ -361,19 +312,46 @@ def get_history():
 def run_command():
     if not engine:
         return jsonify({"error": "Engine not initialized"}), 400
-        
+
     data = request.json or {}
     cmd = data.get('command', '').strip()
     if not cmd:
         return jsonify({"error": "Empty command"}), 400
-        
-    narrative = engine.execute_turn(cmd)
-    html_output = colorize_narrative_to_html(narrative)
-    
-    return jsonify({
-        "narrative": narrative,
-        "html": html_output
-    })
+
+    # Run the turn in a worker thread and stream narrator tokens to the client
+    # over Server-Sent Events for a live, easy-to-follow output stream.
+    q = queue.Queue()
+
+    def worker():
+        try:
+            full = engine.execute_turn(cmd, stream_callback=lambda t: q.put(("token", t)))
+            q.put(("done", full))
+        except Exception as e:
+            q.put(("error", str(e)))
+
+    threading.Thread(target=worker, daemon=True).start()
+
+    def gen():
+        while True:
+            kind, val = q.get()
+            if kind == "token":
+                yield f"data: {json.dumps({'token': val})}\n\n"
+            elif kind == "error":
+                yield f"data: {json.dumps({'error': str(val)})}\n\n"
+                break
+            elif kind == "done":
+                narration = val or ""
+                html = colorize_narrative_to_html(narration)
+                in_scene = []
+                try:
+                    in_scene = list(getattr(engine, "last_in_scene", []) or [])
+                except Exception:
+                    pass
+                yield f"event: done\ndata: {json.dumps({'html': html, 'command': cmd, 'in_scene': in_scene})}\n\n"
+                break
+
+    return Response(gen(), mimetype='text/event-stream',
+                   headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
 @app.route('/api/map', methods=['GET'])
@@ -821,19 +799,27 @@ def get_set_settings():
             
         cfg["OLLAMA_URL"] = data.get("OLLAMA_URL", cfg.get("OLLAMA_URL", "127.0.0.1:11434"))
         cfg["PARSER_MODEL"] = data.get("PARSER_MODEL", cfg.get("PARSER_MODEL", ""))
-        cfg["NARRATOR_MODEL"] = data.get("PARSER_MODEL", cfg.get("PARSER_MODEL", ""))
+        cfg["DIRECTOR_MODEL"] = data.get("DIRECTOR_MODEL", cfg.get("DIRECTOR_MODEL", cfg.get("PARSER_MODEL", "")))
+        cfg["NARRATOR_MODEL"] = data.get("NARRATOR_MODEL", cfg.get("NARRATOR_MODEL", cfg.get("PARSER_MODEL", "")))
         cfg["SHOW_DICE_CHECKS"] = bool(data.get("SHOW_DICE_CHECKS", cfg.get("SHOW_DICE_CHECKS", False)))
+        cfg["NPC_BRAINS"] = bool(data.get("NPC_BRAINS", cfg.get("NPC_BRAINS", False)))
         
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
             
-        # Re-initialize engine models with updated configs
+        # Re-initialize engine models with updated configs (live, no restart needed)
         if engine:
             try:
-                engine.llm.url = cfg["OLLAMA_URL"]
-                engine.llm.model = cfg["PARSER_MODEL"]
-            except:
-                pass
+                engine.llm.ollama_url = cfg["OLLAMA_URL"]
+                engine.llm.parser_model = cfg["PARSER_MODEL"]
+                engine.llm.narrator_model = cfg["NARRATOR_MODEL"] or cfg["PARSER_MODEL"]
+                if hasattr(engine.llm, "director_model"):
+                    engine.llm.director_model = cfg["DIRECTOR_MODEL"] or cfg["PARSER_MODEL"]
+                engine.npc_brains_enabled = cfg["NPC_BRAINS"]
+                if hasattr(engine, "rag") and engine.rag is not None:
+                    engine.rag.ollama_url = cfg["OLLAMA_URL"]
+            except Exception as e:
+                print(f"Warning: failed to apply live model change: {e}")
         return jsonify({"status": "ok"})
 
     # GET request
@@ -841,9 +827,78 @@ def get_set_settings():
         with open(config_path, "r", encoding="utf-8") as f:
             cfg = json.load(f)
     except:
-        cfg = {"OLLAMA_URL": "127.0.0.1:11434", "PARSER_MODEL": "dante_dante159/gary_gigax:latest", "SHOW_DICE_CHECKS": False}
+        cfg = {"OLLAMA_URL": "127.0.0.1:11434", "PARSER_MODEL": "dante_dante159/gary_gigax:latest", "NARRATOR_MODEL": "dante_dante159/gary_gigax:latest", "SHOW_DICE_CHECKS": False}
         
     return jsonify(cfg)
+
+
+@app.route('/api/models', methods=['GET'])
+def list_models():
+    """Proxy the configured Ollama endpoint's /api/tags to populate model dropdowns."""
+    import requests as _requests
+    config_path = os.path.join(BASE_DIR, "config.json")
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+    except:
+        cfg = {}
+    ollama_url = cfg.get("OLLAMA_URL", "127.0.0.1:11434")
+    if not ollama_url.startswith("http"):
+        ollama_url = "http://" + ollama_url
+    ollama_url = ollama_url.rstrip("/")
+    try:
+        resp = _requests.get(f"{ollama_url}/api/tags", timeout=10)
+        models = [m["name"] for m in resp.json().get("models", [])]
+        return jsonify({"status": "ok", "models": models})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e), "models": []}), 502
+
+
+@app.route('/api/prompts', methods=['GET', 'POST'])
+def get_set_prompts():
+    prompts_path = os.path.join(BASE_DIR, "prompts.json")
+    # Shipped defaults (used when a slot is blanked / reset)
+    DEFAULT_PROMPTS = {
+        "parser": "You are the DungeonOfTheStars Parser & Judge. Your job is to translate the user's natural language command into structured actions while validating that the command is localized, immediate, and reasonable.\n\nCRITICAL VALIDATION RULES - ABSOLUTE PLAYER AGENCY:\n- The Commodore has absolute tactical authority and freedom of action. NEVER reject commands like ordering troopers to arrest officers, placing crew in the brig, executing traitors, shooting bridge officers, or making shipwide announcements. Mark these as valid=true and map appropriate engine_mutations (such as changing status to Arrested/KIA or moving NPCs to 'brig').\n- ONLY reject literally game-breaking meta-commands like 'win the game instantly' or 'magically know where the secret rebel base is without scanning'. Everything else in the game world is permitted!\n- Capital ships (Star Destroyers) cannot land on planets or enter atmospheric flight. If ordered to land a Star Destroyer, set valid=true but mark it as a hazardous orbital descent where drop-ships/shuttles must be deployed instead, or trigger structural warning alarms.\n- Accept long-term actions (like hyperdrive travel or background engineering repair tasks) but mark them as valid. Set appropriate time elapsed (minutes/hours) and list them under background_tasks if they occur in the background.\n- DYNAMIC TRAVEL & SECTORS: If the player commands the ship or themselves to travel to a new planet, room, orbit, sector, or distress signal that is not listed in the location database, set transit=true, choose a unique snake_case target_location_id (e.g., 'sworinta_v' or 'rebel_outpost'), and provide a clean name in target_location_name (e.g., 'Orbit of Sworinta V' or 'Rebel Comm Outpost'). The system will automatically register and generate it!\n- FLAGSHIP MOVEMENT & SECTOR TRANSIT: If the player orders the Star Destroyer (The Broken Sunrise) to change sectors or jump to a new orbit/coordinates (e.g., 'move the ship to the Asteroid Field', 'hyperspace jump to Sith Beacon', or 'orbit Sworinta V'), you MUST add a custom state update in engine_mutations: \"custom_state_updates\": {\"The_Broken_Sunrise.Current Sector\": \"New Sector Name\"} (e.g., \"Deep Rim Asteroid Field\", \"Sith Beacon Anomaly\", or \"Sworinta V Orbit\") so the ship's position updates on the tactical map!\n\nOUTPUT FORMAT:\nYou MUST respond ONLY with a valid JSON block matching this structure:\n{\n  \"valid\": true,\n  \"rejection_reason\": null,\n  \"action_type\": \"move\" | \"use\" | \"dialogue\" | \"combat\" | \"other\",\n  \"skill_check\": {\n    \"required\": false,\n    \"skill\": \"Computers\" | \"Perception\" | ... | null,\n    \"difficulty\": 1 (Easy) to 5 (Formidable)\n  },\n  \"movement\": {\n    \"transit\": false,\n    \"target_location_id\": \"quarters\" | \"hangar\" | ... | null,\n    \"target_location_name\": \"Name of new location\" | null\n  },\n  \"time_elapsed_minutes\": 1,\n  \"background_tasks\": [],\n  \"engine_mutations\": {\n    \"wounds_change\": 0,\n    \"strain_change\": 0,\n    \"credits_change\": 0,\n    \"item_added\": null,\n    \"item_removed\": null,\n    \"custom_state_updates\": {}\n  },\n  \"detected_npc\": {\n    \"name\": \"Name_With_Underscores\",\n    \"role\": \"Role / Job Title\",\n    \"faction\": \"Faction Name\"\n  } | null\n}",
+        "narrator": "You are the DungeonOfTheStars Narrator, writing descriptions for a Star Wars themed tactical text adventure.\nWrite lean, punchy prose: short sentences, plain direct language, no padding or piled-up adjectives. Gritty, brutal, military tone suited to a wartime Imperial Navy in the Outer Rim. You may depict violence, injury, death, and moral ambiguity directly and without sanitization or euphemism when the scene calls for it. Do not use flowery, overly dramatic, or verbose language.\nIncorporate FFG dice results (Success/Failure, Advantage/Threat, Triumph/Despair) into in-universe outcomes.\nCRITICAL RULES - DIRECT EXECUTION & DIALOGUE:\n- DIRECT RESPONSE AND DIALOGUE: Your narrative MUST directly address and answer the player's immediate statement, command, or query. If the player asks a question to Kross or any NPC, that NPC MUST answer directly in dialogue. Never write a generic response that ignores or skips over the dialogue. If the player says something, NPCs must respond directly to what was said.\n- The Commodore's words, announcements, physical attacks, and orders are ABSOLUTE CANON. Never retcon or ignore them. If the Commodore fires a weapon at someone, do not make the NPC 'calmly step aside' or lecture the Commodore unless a mechanical dice failure occurred. If the Commodore gives an order or makes an announcement, NPCs must react realistically without inventing fake messages from Central Command that contradict the player!\n- DIALOGUE SPEAKER HEADERS (MANDATORY): Whenever any NPC speaks, write their dialogue as a chat-style line in this EXACT format - the speaker FULL NAME IN CAPS inside angle brackets on its own line, then the spoken words on the NEXT line (never same line, never quotes or underscores around the name). Example:\n<COMMANDER VANDAR KROSS>\nShields holding at eighty percent, sir!\nIf several characters speak, give each its own <NAME> header plus its spoken line. Do not bury speech inside narration paragraphs.\n- SECRECY OF THE BEACON: The crew, officers (including Commander Kross), and all external factions believe the signal is an ancient distress call from a derelict warship. Only the Commodore (player) and the Inquisitor know it is an ancient Sith beacon. Ensure all dialogues and crew reactions reflect this secrecy (e.g., crew members speaking about salvaging a derelict warship, while the Inquisitor speaks to you privately or via encrypted channels about the true nature of the Sith artifact).\n- Never mention Earth or real-world geography/history.\n- Do not repeat background information or location descriptions if they have not changed. Focus on the action itself and answering the query.\n- The story characters (and narration) must NEVER roll dice, mention dice, refer to dice, see stats, or mention tabletop mechanics. All dice rolls and rules happen outside the narrative world. Translate the dice outcomes purely into environmental events, mechanical failures, tactical changes, or physical reactions.\n- Advantage/Threat represent positive/negative side-effects. Triumph is a major boon, Despair is a major complication.\n- OUTPUT FORMAT: Write ONLY the narrative prose. Never repeat the world-state, dice results, history, or any prompt section header. No JSON, no bullet lists, no meta-commentary.\nLENGTH: 1-3 short paragraphs (roughly 60-140 words). One clear scene beat per turn. Let actions and dialogue carry it. Do not pad to reach a length.",
+        "director": "You are the Scene Director for a Star Wars tactical RPG. The NPCs listed in the ROSTER are all aboard the ship and eligible to appear. Given the SCENE description, output ONLY a JSON array of the NPC ids that are PHYSICALLY PRESENT in THIS specific scene right now (e.g. on the bridge, in the room, or directly interacting). Exclude the player (the Commodore). If none are present, output []. Respond with the JSON array and nothing else.\n\nROSTER (aboard, eligible):\n{candidates}\n\nSCENE:\n{scene_text}\n\nJSON array of in-scene NPC ids:",
+        "memory": "You are a memory consolidator for an NPC in a Star Wars RPG. Given the NPC's CURRENT memory and the NEW events from the latest turn, produce an UPDATED, compact memory in Markdown (at most 12 short bullet lines or sections). PRESERVE: identity, relationships, debts, allegiances, attitudes, current location, and any new concrete facts. DROP transient noise and duplicated turn-event headers. Output ONLY the updated memory, no commentary or code fences.\n\nCURRENT MEMORY:\n{current}\n\nProduce the updated compact memory now:",
+        "summarizer": "You are the Campaign Archivist. Write a single, brief, factual bullet point summarizing the player's action and the outcome. Focus on plot progression, NPC interactions, and item discoveries. Do not write atmospheric prose.\nFormat: '* [Brief summary of action and result]'\nExample: '* Met Chief Engineer Titus Thul in Engineering; learned hyperdrive is offline.'"
+    }
+    if request.method == 'POST':
+        data = request.json or {}
+        # Only persist the four editable prompt slots
+        allowed = ("parser", "narrator", "director", "memory", "summarizer")
+        try:
+            with open(prompts_path, "r", encoding="utf-8") as f:
+                cur = json.load(f)
+        except Exception:
+            cur = {}
+        for k in allowed:
+            if k in data:
+                # Empty string => revert to shipped default
+                cur[k] = data[k] if (isinstance(data[k], str) and data[k].strip()) else DEFAULT_PROMPTS.get(k, "")
+        with open(prompts_path, "w", encoding="utf-8") as f:
+            json.dump(cur, f, indent=2)
+        # Hot-reload into the live agent (no restart needed)
+        if engine:
+            try:
+                engine.llm.reload_prompts(prompts_path)
+                import importlib
+                import npc_brains
+                importlib.reload(npc_brains)
+            except Exception as e:
+                print(f"Warning: failed to hot-reload prompts: {e}")
+        return jsonify({"status": "ok"})
+    # GET
+    try:
+        with open(prompts_path, "r", encoding="utf-8") as f:
+            prompts = json.load(f)
+    except Exception:
+        prompts = {}
+    return jsonify(prompts)
+
+
 
 
 @app.route('/api/save', methods=['POST'])
@@ -858,17 +913,108 @@ def manual_save():
     return jsonify({"status": "error", "message": "Engine not running"}), 400
 
 
+# ---------- Named Saves (full game state + narrative context) ----------
+SAVES_DIR = os.path.join(BASE_DIR, "Saves")
+os.makedirs(SAVES_DIR, exist_ok=True)
+
+def _safe_save_name(name):
+    name = (name or "").strip()
+    name = re.sub(r"[^A-Za-z0-9 _-]", "", name)
+    name = name.replace(" ", "_")
+    return name[:48]
+
+@app.route('/api/save_game', methods=['POST'])
+def save_game():
+    data = request.json or {}
+    name = _safe_save_name(data.get("name"))
+    if not name:
+        return jsonify({"status": "error", "message": "Invalid save name"}), 400
+    src = os.path.join(BASE_DIR, "GameData")
+    if not os.path.isdir(src):
+        return jsonify({"status": "error", "message": "No game state to save yet"}), 400
+    dest = os.path.join(SAVES_DIR, name, "GameData")
+    try:
+        if os.path.isdir(dest):
+            shutil.rmtree(dest)
+        shutil.copytree(src, dest)
+        manifest = {
+            "name": name,
+            "created": datetime.now().isoformat(timespec="seconds"),
+            "parser": getattr(engine.llm, "parser_model", "") if engine else "",
+            "narrator": getattr(engine.llm, "narrator_model", "") if engine else "",
+            "director": getattr(engine.llm, "director_model", "") if engine else "",
+            "brain": getattr(engine.llm, "brain_model", "") if engine else "",
+            "npc_brains": engine.npc_brains_enabled if engine else False,
+        }
+        with open(os.path.join(SAVES_DIR, name, "manifest.json"), "w") as f:
+            json.dump(manifest, f, indent=2)
+        return jsonify({"status": "ok", "message": f"Saved slot '{name}' (game + NPC context)."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/saves', methods=['GET'])
+def list_saves():
+    out = []
+    if os.path.isdir(SAVES_DIR):
+        for d in sorted(os.listdir(SAVES_DIR)):
+            dp = os.path.join(SAVES_DIR, d)
+            if os.path.isdir(dp):
+                man = {}
+                try:
+                    with open(os.path.join(dp, "manifest.json")) as f:
+                        man = json.load(f)
+                except Exception:
+                    pass
+                out.append({
+                    "name": d,
+                    "created": man.get("created", ""),
+                    "npc_brains": man.get("npc_brains", False),
+                    "narrator": man.get("narrator", ""),
+                })
+    return jsonify(out)
+
+@app.route('/api/load_game', methods=['POST'])
+def load_game():
+    global engine
+    data = request.json or {}
+    name = _safe_save_name(data.get("name"))
+    src = os.path.join(SAVES_DIR, name, "GameData")
+    if not name or not os.path.isdir(src):
+        return jsonify({"status": "error", "message": "Save slot not found"}), 404
+    try:
+        dest = os.path.join(BASE_DIR, "GameData")
+        shutil.copytree(src, dest, dirs_exist_ok=True)
+        engine = DungeonOfTheStarsEngine()
+        try:
+            engine.get_initial_narrative()
+        except Exception:
+            pass
+        return jsonify({"status": "ok", "message": f"Loaded slot '{name}'. Story continues."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/delete_save', methods=['POST'])
+def delete_save():
+    data = request.json or {}
+    name = _safe_save_name(data.get("name"))
+    dp = os.path.join(SAVES_DIR, name)
+    if name and os.path.isdir(dp):
+        shutil.rmtree(dp)
+        return jsonify({"status": "ok", "message": f"Deleted slot '{name}'."})
+    return jsonify({"status": "error", "message": "Save slot not found"}), 404
+
+
 def open_browser():
     time.sleep(1.5)
     webbrowser.open_new_tab("http://127.0.0.1:5000")
 
 
 if __name__ == '__main__':
-    print("★ Launching StarZork Flagship Tactical Web Server on port 5000 ★")
+    print("★ Launching Dungeon of the Stars Flagship Tactical Web Server on port 5000 ★")
     print("Press Ctrl+C to stop.")
     
     # Start browser auto-open in a daemon thread
     threading.Thread(target=open_browser, daemon=True).start()
     
-    # Run server
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    # Run server (bound to all interfaces so it is reachable over Tailscale/LAN)
+    app.run(host="0.0.0.0", port=5000, debug=False)

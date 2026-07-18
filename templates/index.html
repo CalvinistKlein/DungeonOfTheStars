@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StarZork: Fleet Command Console</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Dungeon of the Stars: Fleet Command Console</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -26,9 +26,9 @@
             --md-sys-color-on-error: #690005;
             --md-sys-color-warning: #ffe082;
             
-            --md-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
-            --md-elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
-            --md-elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.30);
+            --md-elevation-1: none;
+            --md-elevation-2: none;
+            --md-elevation-3: none;
 
             --font-family: 'Inter', sans-serif;
         }
@@ -113,7 +113,7 @@
         .panel {
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 12px;
+            border-radius: 6px;
             box-shadow: var(--md-elevation-1);
             display: flex;
             flex-direction: column;
@@ -166,14 +166,14 @@
             width: 100%;
             height: 6px;
             background: var(--md-sys-color-outline-variant);
-            border-radius: 100px;
+            border-radius: 6px;
             overflow: hidden;
         }
 
         .progress-bar-fill {
             height: 100%;
             width: 0%;
-            border-radius: 100px;
+            border-radius: 6px;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -204,7 +204,7 @@
         .attribute-card {
             background: var(--md-sys-color-surface-container);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 10px;
             text-align: center;
         }
@@ -234,7 +234,7 @@
         .btn {
             background: transparent;
             border: 1px solid var(--md-sys-color-outline);
-            border-radius: 100px;
+            border-radius: 6px;
             padding: 12px 18px;
             font-family: var(--font-family);
             font-size: 0.85rem;
@@ -282,7 +282,7 @@
             flex: 1;
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 12px;
+            border-radius: 6px;
             padding: 24px;
             overflow-y: auto;
             display: flex;
@@ -332,26 +332,31 @@
         .orange { color: #ffe0b2; }
         .white { color: #ffffff; }
 
-        /* Speech / Dialogue Box styling */
+        /* Speech / Dialogue Box styling - chat-style message blurbs */
         .speech-container {
             background: var(--md-sys-color-surface-container-high);
-            border-left: 4px solid var(--dialogue-color, var(--md-sys-color-primary));
-            border-radius: 4px 12px 12px 4px;
-            padding: 12px 16px;
-            margin: 14px 0;
-            box-shadow: var(--md-elevation-1);
+            background: color-mix(in srgb, var(--dialogue-color, #7a9acc) 7%, var(--md-sys-color-surface-container-high));
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-left: 3px solid var(--dialogue-color, #7a9acc);
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin: 16px 0;
         }
         .speech-speaker {
+            display: inline-block;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
+            letter-spacing: 1.2px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: color-mix(in srgb, currentColor 16%, transparent);
         }
         .speech-text {
-            font-style: italic;
+            font-style: normal;
             color: var(--md-sys-color-on-surface);
-            line-height: 1.45;
+            line-height: 1.5;
         }
 
         /* Terminal Input Area */
@@ -360,7 +365,7 @@
             gap: 16px;
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 12px;
+            border-radius: 6px;
             padding: 12px;
             box-shadow: var(--md-elevation-1);
             align-items: center;
@@ -370,7 +375,7 @@
             flex: 1;
             background: var(--md-sys-color-surface-container);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 14px 16px;
             font-family: var(--font-family);
             font-size: 0.95rem;
@@ -392,7 +397,7 @@
             font-family: var(--font-family);
             font-weight: 600;
             font-size: 0.9rem;
-            border-radius: 100px;
+            border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.2s ease, box-shadow 0.2s ease;
             box-shadow: var(--md-elevation-1);
@@ -413,7 +418,7 @@
             top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(15, 17, 21, 0.8);
             backdrop-filter: blur(4px);
-            z-index: 100;
+            z-index: 1000;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -430,7 +435,7 @@
         .modal {
             background: var(--md-sys-color-surface);
             border: 1px solid var(--md-sys-color-outline);
-            border-radius: 24px;
+            border-radius: 6px;
             box-shadow: var(--md-elevation-3);
             width: 720px;
             max-width: 90%;
@@ -497,7 +502,7 @@
         .vector-art {
             background: var(--md-sys-color-surface-container);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 12px;
+            border-radius: 6px;
             padding: 16px;
             display: flex;
             justify-content: center;
@@ -548,7 +553,7 @@
             width: 100%;
             background: var(--md-sys-color-surface-container);
             border: 1px solid var(--md-sys-color-outline-variant);
-            border-radius: 8px;
+            border-radius: 6px;
             padding: 12px 16px;
             color: var(--md-sys-color-on-surface);
             font-family: var(--font-family);
@@ -561,7 +566,37 @@
             border-color: var(--md-sys-color-primary);
         }
 
+        .prompt-block {
+            margin-bottom: 16px;
+        }
+
+        .prompt-block .form-label {
+            margin-bottom: 6px;
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 120px;
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: var(--md-sys-color-on-surface);
+            font-family: 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-textarea:focus {
+            border-color: var(--md-sys-color-primary);
+        }
+
         .form-checkbox {
+
+
             display: flex;
             align-items: center;
             gap: 12px;
@@ -574,7 +609,7 @@
         /* Launcher Mode Modal */
         #launcher-modal {
             max-width: 480px;
-            border-radius: 28px;
+            border-radius: 6px;
         }
 
         #launcher-modal .btn-choice {
@@ -582,7 +617,7 @@
             margin-bottom: 12px;
             padding: 16px;
             font-size: 0.95rem;
-            border-radius: 100px;
+            border-radius: 6px;
         }
 
         /* Custom Scrollbars */
@@ -597,7 +632,7 @@
 
         ::-webkit-scrollbar-thumb {
             background: var(--md-sys-color-outline-variant);
-            border-radius: 100px;
+            border-radius: 6px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
@@ -619,22 +654,236 @@
             from, to { background-color: transparent }
             50% { background-color: var(--md-sys-color-primary); }
         }
+        /* Mobile status toggle (hidden on desktop) */
+        .hdr-toggle {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline);
+            color: var(--md-sys-color-primary);
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-family: var(--font-family);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .sidebar-backdrop {
+            display: none;
+        }
+
+        /* Drawer close bar (hidden on desktop, shown in mobile drawer) */
+        .drawer-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2px 2px 2px 14px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--md-sys-color-on-surface-variant);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .drawer-close {
+            background: transparent;
+            border: none;
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .drawer-close:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--md-sys-color-on-surface);
+        }
+
+        /* ===== Mobile / Touch Optimization ===== */
+        @media (max-width: 1024px) {
+            body {
+                height: 100dvh;
+            }
+            header {
+                padding: calc(12px + env(safe-area-inset-top)) 14px 12px;
+                gap: 10px;
+            }
+            h1 {
+                font-size: 1rem;
+                gap: 8px;
+            }
+            .header-meta {
+                gap: 14px;
+                font-size: 0.72rem;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+            .hdr-toggle {
+                display: inline-flex;
+            }
+            #btn-status-toggle {
+                position: relative;
+                z-index: 160; /* lift above the dim backdrop so it can toggle closed */
+            }
+            .drawer-bar {
+                display: flex;
+            }
+            main {
+                flex-direction: column;
+                padding: 10px;
+                gap: 10px;
+                height: auto;
+                flex: 1;
+                min-height: 0;
+                overflow: hidden;
+            }
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100dvh;
+                width: min(340px, 86vw);
+                background: var(--md-sys-color-surface);
+                padding: 12px;
+                padding-top: calc(12px + env(safe-area-inset-top));
+                gap: 14px;
+                z-index: 200;
+                transform: translateX(-100%);
+                transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+                overflow-y: auto;
+                box-shadow: var(--md-elevation-3);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-backdrop {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 150;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.25s ease;
+            }
+            .sidebar-backdrop.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .console-container {
+                width: 100%;
+                gap: 12px;
+            }
+            .narrative-log {
+                padding: 14px;
+                gap: 14px;
+                border-radius: 6px;
+            }
+            .narrative-entry {
+                font-size: 0.92rem;
+                line-height: 1.5;
+            }
+            .input-area {
+                padding: 8px;
+                padding-bottom: calc(8px + env(safe-area-inset-bottom));
+                gap: 8px;
+                border-radius: 6px;
+            }
+            .input-field {
+                font-size: 16px; /* prevents iOS auto-zoom on focus */
+                padding: 12px 14px;
+            }
+            .btn-send {
+                padding: 12px 18px;
+                font-size: 0.85rem;
+                white-space: nowrap;
+            }
+            .btn {
+                min-height: 44px;
+                padding: 12px 16px;
+                -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
+            }
+            .control-panel {
+                gap: 8px;
+            }
+            /* Modals become full-screen sheets on mobile */
+            .overlay {
+                padding: 0;
+                align-items: stretch;
+            }
+            .modal {
+                width: 100%;
+                max-width: 100%;
+                max-height: 100dvh;
+                height: 100dvh;
+                border-radius: 0;
+            }
+            #launcher-modal {
+                max-width: 100%;
+                border-radius: 0;
+                height: 100dvh;
+            }
+            .modal-body {
+                padding: 16px;
+            }
+            .modal-header, .modal-footer {
+                padding: 14px 16px;
+                border-radius: 0;
+            }
+            .vector-art {
+                min-height: 240px;
+            }
+            .vector-art svg {
+                max-height: 55vh;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header-meta {
+                display: none;
+            }
+            h1 {
+                font-size: 0.95rem;
+            }
+            .narrative-entry {
+                font-size: 0.9rem;
+            }
+            .input-area {
+                gap: 6px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <header>
-        <h1><span class="logo-dot"></span> StarZork: Fleet Command</h1>
+        <h1><span class="logo-dot"></span> Dungeon of the Stars: Fleet Command</h1>
         <div class="header-meta">
             <div>Sector: <span id="meta-sector" class="active-value">Sworinta IV Orbit</span></div>
             <div>Status: <span id="meta-status" class="active-value">Online</span></div>
             <div>Stardate: <span id="meta-time" class="active-value">--:--:--</span></div>
         </div>
+        <button id="btn-status-toggle" class="hdr-toggle" aria-label="Toggle status panel">Status</button>
     </header>
+
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
     <main>
         <!-- Left Side Dashboard -->
         <div class="sidebar">
+            <div class="drawer-bar">
+                <span>Command Status</span>
+                <button type="button" class="drawer-close" id="drawer-close" aria-label="Close status">&times;</button>
+            </div>
             <!-- Command Profile -->
             <div class="panel">
                 <div class="panel-header">Active Commandant</div>
@@ -707,11 +956,13 @@
 
             <!-- Sidebar Controls -->
             <div class="control-panel">
-                <button class="btn" id="btn-map">🗺️ Sector Map</button>
-                <button class="btn" id="btn-ship">🚀 Ship Schematic</button>
-                <button class="btn" id="btn-settings">⚙️ Console Config</button>
-                <button class="btn" id="btn-save">💾 Manual Save</button>
-                <button class="btn btn-restart" id="btn-restart">🔄 Reset Campaign</button>
+                <button class="btn" id="btn-map">Sector Map</button>
+                <button class="btn" id="btn-ship">Ship Schematic</button>
+                <button class="btn" id="btn-settings">Console Config</button>
+                <button class="btn" id="btn-prompts">Edit Prompts</button>
+                <button class="btn" id="btn-save">Manual Save</button>
+                <button class="btn" id="btn-saves">Saved Games</button>
+                <button class="btn btn-restart" id="btn-restart">Reset Campaign</button>
             </div>
         </div>
 
@@ -781,13 +1032,27 @@
                     <input type="text" class="form-input" id="setting-url" placeholder="192.168.1.121:11434">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" for="setting-model">LLM Command Model</label>
-                    <input type="text" class="form-input" id="setting-model" placeholder="dante_dante159/gary_gigax:latest">
+                    <label class="form-label" for="setting-model">Command Parser Model</label>
+                    <select class="form-input" id="setting-model"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="setting-director">Story Director Model</label>
+                    <select class="form-input" id="setting-director"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="setting-narrator">Storyteller (Narrator) Model</label>
+                    <select class="form-input" id="setting-narrator"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-checkbox">
                         <input type="checkbox" id="setting-dice">
                         <span>Display Tabletop Dice Outcomes</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-checkbox">
+                        <input type="checkbox" id="setting-brains">
+                        <span>Enable NPC Brains (director + persistent memory)</span>
                     </label>
                 </div>
             </div>
@@ -798,11 +1063,47 @@
         </div>
     </div>
 
+    <!-- Prompts Modal -->
+    <div class="overlay" id="overlay-prompts">
+        <div class="modal" style="max-width: 860px; width: 94%;">
+            <div class="modal-header">
+                <div>Model Prompts</div>
+                <button class="modal-close" data-close="overlay-prompts">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 20px;">
+                <p style="margin: 0 0 14px; font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); line-height: 1.45;">
+                    Edit the system prompts sent to each model. Changes apply live (no restart). The <b>Parser</b> turns your command into game actions, the <b>Narrator</b> writes the story, the <b>Director</b> picks which NPCs are in-scene, and <b>Memory</b> consolidates NPC recall.
+                </p>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-parser">Parser (command &rarr; JSON)</label>
+                    <textarea class="form-textarea" id="prompt-parser" rows="7"></textarea>
+                </div>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-narrator">Narrator (storytelling)</label>
+                    <textarea class="form-textarea" id="prompt-narrator" rows="9"></textarea>
+                </div>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-director">Director (in-scene NPC selection)</label>
+                    <textarea class="form-textarea" id="prompt-director" rows="5"></textarea>
+                </div>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-memory">Memory (NPC consolidation)</label>
+                    <textarea class="form-textarea" id="prompt-memory" rows="5"></textarea>
+                </div>
+                <div id="prompts-status" style="font-size: 0.82rem; min-height: 1.1em; margin: 4px 0 10px;"></div>
+                <div class="modal-actions">
+                    <button class="btn" id="btn-prompts-reset">Reset to Defaults</button>
+                    <button class="btn btn-primary" id="btn-prompts-save">Apply Prompts</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Campaign Launcher Modal -->
     <div class="overlay active" id="overlay-launcher">
         <div class="modal" id="launcher-modal">
-            <div class="modal-header" style="justify-content: center;">
-                <div style="font-size: 1.2rem;">StarZork Operations Gateway</div>
+        <div class="modal-header" style="justify-content: center;">
+                <div style="font-size: 1.2rem;">Dungeon of the Stars Operations Gateway</div>
             </div>
             <div class="modal-body" style="text-align: center; padding: 32px 24px;">
                 <p style="margin-bottom: 24px; font-size: 0.95rem; color: var(--md-sys-color-on-surface-variant); line-height: 1.5;">Select a tactical operational mode to commence the simulation.</p>
@@ -987,124 +1288,90 @@
             const input = document.getElementById('cmd-input');
             const cmd = input.value.trim();
             if (!cmd) return;
-            
+
             input.value = '';
-            
-            // Render the prompt instantly
-            appendHistoryItem(cmd, '<span style="color: var(--md-sys-color-on-surface-variant);">Processing transmission...</span><span class="cursor"></span>');
-            scrollToBottom();
-            
             isTyping = true;
             document.getElementById('btn-send').disabled = true;
-            
+
+            const log = document.getElementById('narrative-log');
+            const el = document.createElement('div');
+            el.className = 'narrative-entry';
+            el.innerHTML = `<div class="prompt-line">${escapeHtml(cmd)}</div><div class="live-content"></div><span class="cursor"></span>`;
+            log.appendChild(el);
+            const content = el.querySelector('.live-content');
+            scrollToBottom();
+
             try {
                 const res = await fetch('/api/command', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ command: cmd })
                 });
-                const data = await res.json();
-                
-                // Remove processing marker
-                const log = document.getElementById('narrative-log');
-                log.removeChild(log.lastChild);
-                
-                // Set up typewriter streaming
-                const el = document.createElement('div');
-                el.className = 'narrative-entry';
-                el.innerHTML = `<div class="prompt-line">${cmd}</div><div id="typing-content"></div><span class="cursor"></span>`;
-                log.appendChild(el);
-                
-                await streamTypewriter(data.html, 'typing-content');
-                await fetchStatus();
-                
-                // Auto-refresh active views
-                if (document.getElementById('overlay-map').classList.contains('active')) {
-                    await loadSectorMap();
+                if (!res.ok || !res.body) throw new Error('No response stream');
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    let idx;
+                    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                        const chunk = buffer.slice(0, idx);
+                        buffer = buffer.slice(idx + 2);
+                        handleSSE(chunk, content);
+                    }
                 }
-                if (document.getElementById('overlay-ship').classList.contains('active')) {
-                    await loadShipSchematic();
-                }
+                if (buffer.trim()) handleSSE(buffer, content);
             } catch (err) {
                 console.error(err);
-                appendHistoryItem('', '<span class="red">SYSTEM ERROR: Command transmission timed out or failed to resolve. Check server log.</span>');
+                content.innerHTML = '<span class="red">SYSTEM ERROR: transmission failed. Check server log.</span>';
             } finally {
+                const cur = el.querySelector('.cursor');
+                if (cur) cur.remove();
                 isTyping = false;
                 document.getElementById('btn-send').disabled = false;
                 input.focus();
+                scrollToBottom();
+                fetchStatus();
+                if (document.getElementById('overlay-map').classList.contains('active')) loadSectorMap();
+                if (document.getElementById('overlay-ship').classList.contains('active')) loadShipSchematic();
             }
         }
 
-        // Typewriter streaming effect
-        function streamTypewriter(htmlContent, targetId) {
-            return new Promise((resolve) => {
-                const container = document.getElementById(targetId);
-                
-                const temp = document.createElement('div');
-                temp.innerHTML = htmlContent;
-                const nodes = Array.from(temp.childNodes);
-                
-                let nodeIdx = 0;
-                container.innerHTML = '';
-                
-                function printNextNode() {
-                    if (nodeIdx >= nodes.length) {
-                        container.removeAttribute('id');
-                        const cursor = container.nextElementSibling;
-                        if (cursor && cursor.className === 'cursor') {
-                            cursor.remove();
-                        }
-                        resolve();
-                        return;
-                    }
-                    
-                    const node = nodes[nodeIdx];
-                    if (node.nodeType === Node.TEXT_NODE) {
-                        const words = node.textContent.split(/(\s+)/);
-                        let wordIdx = 0;
-                        const textSpan = document.createTextNode('');
-                        container.appendChild(textSpan);
-                        
-                        function printNextWord() {
-                            if (wordIdx >= words.length) {
-                                nodeIdx++;
-                                printNextNode();
-                                return;
-                            }
-                            textSpan.textContent += words[wordIdx];
-                            wordIdx++;
-                            scrollToBottom();
-                            setTimeout(printNextWord, 6);
-                        }
-                        printNextWord();
-                    } else {
-                        const clone = node.cloneNode(false);
-                        container.appendChild(clone);
-                        
-                        const childWords = node.textContent ? node.textContent.split(/(\s+)/) : [];
-                        if (childWords.length > 0) {
-                            let childIdx = 0;
-                            function printNextChildWord() {
-                                if (childIdx >= childWords.length) {
-                                    nodeIdx++;
-                                    printNextNode();
-                                    return;
-                                }
-                                clone.textContent += childWords[childIdx];
-                                childIdx++;
-                                scrollToBottom();
-                                setTimeout(printNextChildWord, 6);
-                            }
-                            printNextChildWord();
-                        } else {
-                            nodeIdx++;
-                            printNextNode();
-                        }
-                    }
+        function handleSSE(chunk, content) {
+            const lines = chunk.split('\n');
+            let event = 'message';
+            let data = '';
+            for (const line of lines) {
+                if (line.startsWith('event:')) event = line.slice(6).trim();
+                else if (line.startsWith('data:')) data += line.slice(5).trim();
+            }
+            if (!data) return;
+            let obj;
+            try { obj = JSON.parse(data); } catch (e) { return; }
+            if (event === 'done') {
+                content.innerHTML = obj.html;
+                if (Array.isArray(obj.in_scene) && obj.in_scene.length) {
+                    const tag = document.createElement('div');
+                    tag.className = 'in-scene-tag';
+                    tag.textContent = '◎ IN SCENE: ' + obj.in_scene.join(', ');
+                    tag.style.cssText = 'margin-top:6px;font-size:0.72rem;letter-spacing:0.04em;color:#7a9acc;opacity:0.85;text-transform:uppercase;';
+                    content.parentNode.appendChild(tag);
                 }
-                
-                printNextNode();
-            });
+            } else if (obj.token !== undefined) {
+                content.textContent += obj.token;
+                scrollToBottom();
+            } else if (obj.error) {
+                content.innerHTML = '<span class="red">SYSTEM ERROR: ' + escapeHtml(obj.error) + '</span>';
+            }
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
         }
 
         document.getElementById('btn-send').addEventListener('click', transmitCommand);
@@ -1173,6 +1440,71 @@
             }
         });
 
+        // Prompts editor
+        document.getElementById('btn-prompts').addEventListener('click', async () => {
+            openOverlay('overlay-prompts');
+            try {
+                const res = await fetch('/api/prompts');
+                const p = await res.json();
+                document.getElementById('prompt-parser').value = p.parser || '';
+                document.getElementById('prompt-narrator').value = p.narrator || '';
+                document.getElementById('prompt-director').value = p.director || '';
+                document.getElementById('prompt-memory').value = p.memory || '';
+                document.getElementById('prompts-status').textContent = '';
+            } catch (err) {
+                document.getElementById('prompts-status').textContent = 'Failed to load prompts.';
+            }
+        });
+
+        document.getElementById('btn-prompts-save').addEventListener('click', async () => {
+            const status = document.getElementById('prompts-status');
+            status.textContent = 'Saving...';
+            const payload = {
+                parser: document.getElementById('prompt-parser').value,
+                narrator: document.getElementById('prompt-narrator').value,
+                director: document.getElementById('prompt-director').value,
+                memory: document.getElementById('prompt-memory').value
+            };
+            try {
+                const res = await fetch('/api/prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                status.textContent = (data.status === 'ok') ? '✓ Prompts applied live.' : ('Error: ' + (data.message || 'unknown'));
+            } catch (err) {
+                status.textContent = 'Failed to save prompts.';
+            }
+        });
+
+        document.getElementById('btn-prompts-reset').addEventListener('click', async () => {
+            if (!confirm('Reset all prompts to the shipped defaults?')) return;
+            const status = document.getElementById('prompts-status');
+            status.textContent = 'Resetting...';
+            try {
+                const res = await fetch('/api/prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parser: '', narrator: '', director: '', memory: '' })
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    const r2 = await fetch('/api/prompts');
+                    const p = await r2.json();
+                    document.getElementById('prompt-parser').value = p.parser || '';
+                    document.getElementById('prompt-narrator').value = p.narrator || '';
+                    document.getElementById('prompt-director').value = p.director || '';
+                    document.getElementById('prompt-memory').value = p.memory || '';
+                    status.textContent = '✓ Reset to defaults.';
+                } else {
+                    status.textContent = 'Error: ' + (data.message || 'unknown');
+                }
+            } catch (err) {
+                status.textContent = 'Failed to reset prompts.';
+            }
+        });
+
         // Config settings
         document.getElementById('btn-settings').addEventListener('click', async () => {
             openOverlay('overlay-settings');
@@ -1181,33 +1513,220 @@
                 const data = await res.json();
                 document.getElementById('setting-url').value = data.OLLAMA_URL;
                 document.getElementById('setting-model').value = data.PARSER_MODEL;
+                document.getElementById('setting-director').value = data.DIRECTOR_MODEL || data.PARSER_MODEL;
+                document.getElementById('setting-narrator').value = data.NARRATOR_MODEL || data.PARSER_MODEL;
                 document.getElementById('setting-dice').checked = data.SHOW_DICE_CHECKS;
+                document.getElementById('setting-brains').checked = !!data.NPC_BRAINS;
+                // Populate model dropdowns from the live Ollama endpoint
+                try {
+                    const mres = await fetch('/api/models');
+                    const mdata = await mres.json();
+                    const models = (mdata.status === 'ok') ? mdata.models : [];
+                    populateModelSelect('setting-model', models, data.PARSER_MODEL);
+                    populateModelSelect('setting-director', models, data.DIRECTOR_MODEL || data.PARSER_MODEL);
+                    populateModelSelect('setting-narrator', models, data.NARRATOR_MODEL || data.PARSER_MODEL);
+                } catch (merr) {
+                    console.error("Failed to load model list:", merr);
+                }
             } catch (err) {
                 console.error("Failed to read current config:", err);
             }
         });
 
+        function populateModelSelect(elId, models, selected) {
+            const sel = document.getElementById(elId);
+            sel.innerHTML = '';
+            if (!models.length) {
+                const opt = document.createElement('option');
+                opt.value = selected || '';
+                opt.textContent = selected || '(no models found)';
+                sel.appendChild(opt);
+                return;
+            }
+            models.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                if (name === selected) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            if (selected && !models.includes(selected)) {
+                const opt = document.createElement('option');
+                opt.value = selected;
+                opt.textContent = selected + ' (current)';
+                opt.selected = true;
+                sel.appendChild(opt);
+            }
+        }
+
         document.getElementById('btn-save-settings').addEventListener('click', async () => {
             const url = document.getElementById('setting-url').value.trim();
             const model = document.getElementById('setting-model').value.trim();
+            const director = document.getElementById('setting-director').value.trim();
+            const narrator = document.getElementById('setting-narrator').value.trim();
             const dice = document.getElementById('setting-dice').checked;
-            
+            const brains = document.getElementById('setting-brains').checked;
+
             try {
                 const res = await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ OLLAMA_URL: url, PARSER_MODEL: model, SHOW_DICE_CHECKS: dice })
+                    body: JSON.stringify({ OLLAMA_URL: url, PARSER_MODEL: model, DIRECTOR_MODEL: director, NARRATOR_MODEL: narrator, SHOW_DICE_CHECKS: dice, NPC_BRAINS: brains })
                 });
                 const data = await res.json();
                 if (data.status === 'ok') {
                     closeOverlay('overlay-settings');
-                    appendHistoryItem('', '<span style="color: var(--md-sys-color-primary); font-weight: 500;">⚙️ Console configurations applied and saved successfully.</span>');
+                    appendHistoryItem('', '<span style="color: var(--md-sys-color-primary); font-weight: 500;">Console configurations applied and saved successfully.</span>');
                     scrollToBottom();
                 }
             } catch (err) {
                 alert("Failed to save new configuration options.");
             }
         });
+        // Saved Games
+        document.getElementById('btn-saves').addEventListener('click', () => {
+            openOverlay('overlay-saves');
+            refreshSaves();
+        });
+
+        async function refreshSaves() {
+            try {
+                const res = await fetch('/api/saves');
+                const saves = await res.json();
+                const list = document.getElementById('saves-list');
+                const empty = document.getElementById('saves-empty');
+                list.innerHTML = '';
+                if (!saves.length) {
+                    empty.style.display = 'block';
+                    return;
+                }
+                empty.style.display = 'none';
+                saves.forEach(s => {
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px; background:var(--md-sys-color-surface-variant); border-radius:8px;';
+                    const info = document.createElement('div');
+                    info.style.cssText = 'font-size:0.85rem;';
+                    info.innerHTML = `<div style="font-weight:600;">${s.name}</div><div style="color:var(--md-sys-color-on-surface-variant);">${s.created || ''}${s.npc_brains ? ' · 🧠 brains' : ''}</div>`;
+                    const ctrls = document.createElement('div');
+                    ctrls.style.cssText = 'display:flex; gap:6px;';
+                    const loadBtn = document.createElement('button');
+                    loadBtn.className = 'btn';
+                    loadBtn.textContent = 'Load';
+                    loadBtn.onclick = () => doLoadSave(s.name);
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'btn btn-restart';
+                    delBtn.textContent = 'Delete';
+                    delBtn.onclick = () => doDeleteSave(s.name);
+                    ctrls.appendChild(loadBtn);
+                    ctrls.appendChild(delBtn);
+                    row.appendChild(info);
+                    row.appendChild(ctrls);
+                    list.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Failed to load saves list', err);
+            }
+        }
+
+        document.getElementById('btn-do-save').addEventListener('click', async () => {
+            const name = document.getElementById('save-name').value.trim();
+            if (!name) { alert('Enter a save name first.'); return; }
+            try {
+                const res = await fetch('/api/save_game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                appendHistoryItem('', `<span style="color: var(--md-sys-color-primary); font-weight: 500;">${data.message || data.status}</span>`);
+                scrollToBottom();
+                document.getElementById('save-name').value = '';
+                refreshSaves();
+            } catch (err) {
+                alert('Failed to save game.');
+            }
+        });
+
+        async function doLoadSave(name) {
+            if (!confirm(`Load save "${name}"? Current unsaved progress will be overwritten.`)) return;
+            try {
+                const res = await fetch('/api/load_game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    closeOverlay('overlay-saves');
+                    await fetchHistory();
+                    await fetchStatus();
+                    appendHistoryItem('', `<span style="color: var(--md-sys-color-primary); font-weight: 500;">${data.message}</span>`);
+                    scrollToBottom();
+                } else {
+                    alert(data.message || 'Load failed.');
+                }
+            } catch (err) {
+                alert('Failed to load save.');
+            }
+        }
+
+        async function doDeleteSave(name) {
+            if (!confirm(`Delete save "${name}"? This cannot be undone.`)) return;
+            try {
+                await fetch('/api/delete_save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                refreshSaves();
+            } catch (err) {
+                alert('Failed to delete save.');
+            }
+        }
+
+        // Mobile status drawer
+        const sidebarEl = document.querySelector('.sidebar');
+        const backdropEl = document.getElementById('sidebar-backdrop');
+        function openSidebar() {
+            sidebarEl.classList.add('open');
+            backdropEl.classList.add('open');
+        }
+        function closeSidebar() {
+            sidebarEl.classList.remove('open');
+            backdropEl.classList.remove('open');
+        }
+        document.getElementById('btn-status-toggle').addEventListener('click', () => {
+            sidebarEl.classList.contains('open') ? closeSidebar() : openSidebar();
+        });
+        const drawerClose = document.getElementById('drawer-close');
+        if (drawerClose) drawerClose.addEventListener('click', closeSidebar);
+        backdropEl.addEventListener('click', closeSidebar);
+        document.querySelectorAll('.control-panel .btn').forEach(b => {
+            b.addEventListener('click', closeSidebar);
+        });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSidebar(); });
+
     </script>
+    <!-- Saved Games Modal -->
+    <div class="overlay" id="overlay-saves">
+        <div class="modal" style="max-width: 540px;">
+            <div class="modal-header">
+                <div>Saved Games &amp; Context</div>
+                <button class="modal-close" onclick="closeOverlay('overlay-saves')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <input type="text" class="input-field" id="save-name" placeholder="Name this save (e.g. BattleOfEndor)..." autocomplete="off" style="flex: 1;">
+                    <button class="btn" id="btn-do-save">Save Current</button>
+                </div>
+                <div id="saves-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                <div id="saves-empty" style="color: var(--md-sys-color-on-surface-variant); font-size: 0.85rem;">No saves yet. Play a bit, then save your campaign + NPC context.</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeOverlay('overlay-saves')">Close</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
