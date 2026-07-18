@@ -1002,11 +1002,15 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="setting-model">Command Parser Model</label>
-                    <input type="text" class="form-input" id="setting-model" placeholder="dante_dante159/gary_gigax:latest">
+                    <select class="form-input" id="setting-model"></select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="setting-director">Story Director Model</label>
+                    <select class="form-input" id="setting-director"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="setting-narrator">Storyteller (Narrator) Model</label>
-                    <input type="text" class="form-input" id="setting-narrator" placeholder="dante_dante159/gary_gigax:latest">
+                    <select class="form-input" id="setting-narrator"></select>
                 </div>
                 <div class="form-group">
                     <label class="form-checkbox">
@@ -1377,17 +1381,56 @@
                 const data = await res.json();
                 document.getElementById('setting-url').value = data.OLLAMA_URL;
                 document.getElementById('setting-model').value = data.PARSER_MODEL;
+                document.getElementById('setting-director').value = data.DIRECTOR_MODEL || data.PARSER_MODEL;
                 document.getElementById('setting-narrator').value = data.NARRATOR_MODEL || data.PARSER_MODEL;
                 document.getElementById('setting-dice').checked = data.SHOW_DICE_CHECKS;
                 document.getElementById('setting-brains').checked = !!data.NPC_BRAINS;
+                // Populate model dropdowns from the live Ollama endpoint
+                try {
+                    const mres = await fetch('/api/models');
+                    const mdata = await mres.json();
+                    const models = (mdata.status === 'ok') ? mdata.models : [];
+                    populateModelSelect('setting-model', models, data.PARSER_MODEL);
+                    populateModelSelect('setting-director', models, data.DIRECTOR_MODEL || data.PARSER_MODEL);
+                    populateModelSelect('setting-narrator', models, data.NARRATOR_MODEL || data.PARSER_MODEL);
+                } catch (merr) {
+                    console.error("Failed to load model list:", merr);
+                }
             } catch (err) {
                 console.error("Failed to read current config:", err);
             }
         });
 
+        function populateModelSelect(elId, models, selected) {
+            const sel = document.getElementById(elId);
+            sel.innerHTML = '';
+            if (!models.length) {
+                const opt = document.createElement('option');
+                opt.value = selected || '';
+                opt.textContent = selected || '(no models found)';
+                sel.appendChild(opt);
+                return;
+            }
+            models.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                if (name === selected) opt.selected = true;
+                sel.appendChild(opt);
+            });
+            if (selected && !models.includes(selected)) {
+                const opt = document.createElement('option');
+                opt.value = selected;
+                opt.textContent = selected + ' (current)';
+                opt.selected = true;
+                sel.appendChild(opt);
+            }
+        }
+
         document.getElementById('btn-save-settings').addEventListener('click', async () => {
             const url = document.getElementById('setting-url').value.trim();
             const model = document.getElementById('setting-model').value.trim();
+            const director = document.getElementById('setting-director').value.trim();
             const narrator = document.getElementById('setting-narrator').value.trim();
             const dice = document.getElementById('setting-dice').checked;
             const brains = document.getElementById('setting-brains').checked;
@@ -1396,7 +1439,7 @@
                 const res = await fetch('/api/settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ OLLAMA_URL: url, PARSER_MODEL: model, NARRATOR_MODEL: narrator, SHOW_DICE_CHECKS: dice, NPC_BRAINS: brains })
+                    body: JSON.stringify({ OLLAMA_URL: url, PARSER_MODEL: model, DIRECTOR_MODEL: director, NARRATOR_MODEL: narrator, SHOW_DICE_CHECKS: dice, NPC_BRAINS: brains })
                 });
                 const data = await res.json();
                 if (data.status === 'ok') {

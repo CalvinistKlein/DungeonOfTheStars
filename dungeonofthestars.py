@@ -799,6 +799,7 @@ def get_set_settings():
             
         cfg["OLLAMA_URL"] = data.get("OLLAMA_URL", cfg.get("OLLAMA_URL", "127.0.0.1:11434"))
         cfg["PARSER_MODEL"] = data.get("PARSER_MODEL", cfg.get("PARSER_MODEL", ""))
+        cfg["DIRECTOR_MODEL"] = data.get("DIRECTOR_MODEL", cfg.get("DIRECTOR_MODEL", cfg.get("PARSER_MODEL", "")))
         cfg["NARRATOR_MODEL"] = data.get("NARRATOR_MODEL", cfg.get("NARRATOR_MODEL", cfg.get("PARSER_MODEL", "")))
         cfg["SHOW_DICE_CHECKS"] = bool(data.get("SHOW_DICE_CHECKS", cfg.get("SHOW_DICE_CHECKS", False)))
         cfg["NPC_BRAINS"] = bool(data.get("NPC_BRAINS", cfg.get("NPC_BRAINS", False)))
@@ -812,6 +813,8 @@ def get_set_settings():
                 engine.llm.ollama_url = cfg["OLLAMA_URL"]
                 engine.llm.parser_model = cfg["PARSER_MODEL"]
                 engine.llm.narrator_model = cfg["NARRATOR_MODEL"] or cfg["PARSER_MODEL"]
+                if hasattr(engine.llm, "director_model"):
+                    engine.llm.director_model = cfg["DIRECTOR_MODEL"] or cfg["PARSER_MODEL"]
                 engine.npc_brains_enabled = cfg["NPC_BRAINS"]
                 if hasattr(engine, "rag") and engine.rag is not None:
                     engine.rag.ollama_url = cfg["OLLAMA_URL"]
@@ -827,6 +830,28 @@ def get_set_settings():
         cfg = {"OLLAMA_URL": "127.0.0.1:11434", "PARSER_MODEL": "dante_dante159/gary_gigax:latest", "NARRATOR_MODEL": "dante_dante159/gary_gigax:latest", "SHOW_DICE_CHECKS": False}
         
     return jsonify(cfg)
+
+
+@app.route('/api/models', methods=['GET'])
+def list_models():
+    """Proxy the configured Ollama endpoint's /api/tags to populate model dropdowns."""
+    import requests as _requests
+    config_path = os.path.join(BASE_DIR, "config.json")
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+    except:
+        cfg = {}
+    ollama_url = cfg.get("OLLAMA_URL", "127.0.0.1:11434")
+    if not ollama_url.startswith("http"):
+        ollama_url = "http://" + ollama_url
+    ollama_url = ollama_url.rstrip("/")
+    try:
+        resp = _requests.get(f"{ollama_url}/api/tags", timeout=10)
+        models = [m["name"] for m in resp.json().get("models", [])]
+        return jsonify({"status": "ok", "models": models})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e), "models": []}), 502
 
 
 @app.route('/api/save', methods=['POST'])
