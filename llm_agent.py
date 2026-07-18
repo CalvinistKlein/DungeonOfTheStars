@@ -28,6 +28,9 @@ class LLMAgent:
         self.brain_model = DEFAULT_NARRATOR_MODEL
         self.director_model = DEFAULT_NARRATOR_MODEL
 
+        # Editable model prompts (loaded from prompts.json; hot-reloadable)
+        self.prompts = self._load_prompts()
+
         # Auto-discover config.json next to this module if not supplied
         # (prevents silent fallback to hardcoded defaults when LLMAgent()
         #  is instantiated without a config_path).
@@ -126,6 +129,21 @@ class LLMAgent:
             except Exception as e:
                 raise Exception(f"Ollama connection failed: {e}")
 
+    def _load_prompts(self, path=None):
+        """Load editable model prompts from prompts.json (next to this module)."""
+        if not path:
+            path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts.json")
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def reload_prompts(self, path=None):
+        """Hot-reload prompts from disk into the live agent."""
+        self.prompts = self._load_prompts(path)
+        return self.prompts
+
     def _is_ollama_running(self):
         try:
             res = requests.get(f"{self.ollama_url}/api/tags", timeout=2)
@@ -220,50 +238,7 @@ class LLMAgent:
         On any failure to obtain valid JSON, returns a safe 'valid=False' dict
         (instead of silently accepting the command).
         """
-        system_instruction = (
-            "You are the DungeonOfTheStars Parser & Judge. Your job is to translate the user's natural language command "
-            "into structured actions while validating that the command is localized, immediate, and reasonable.\n\n"
-            "CRITICAL VALIDATION RULES - ABSOLUTE PLAYER AGENCY:\n"
-            "- The Commodore has absolute tactical authority and freedom of action. NEVER reject commands like ordering troopers to arrest officers, placing crew in the brig, executing traitors, shooting bridge officers, or making shipwide announcements. Mark these as valid=true and map appropriate engine_mutations (such as changing status to Arrested/KIA or moving NPCs to 'brig').\n"
-            "- ONLY reject literally game-breaking meta-commands like 'win the game instantly' or 'magically know where the secret rebel base is without scanning'. Everything else in the game world is permitted!\n"
-            "- Capital ships (Star Destroyers) cannot land on planets or enter atmospheric flight. If ordered to land a Star Destroyer, set valid=true but mark it as a hazardous orbital descent where drop-ships/shuttles must be deployed instead, or trigger structural warning alarms.\n"
-            "- Accept long-term actions (like hyperdrive travel or background engineering repair tasks) but mark them as valid. "
-            "Set appropriate time elapsed (minutes/hours) and list them under background_tasks if they occur in the background.\n"
-            "- DYNAMIC TRAVEL & SECTORS: If the player commands the ship or themselves to travel to a new planet, room, orbit, sector, or distress signal that is not listed in the location database, set transit=true, choose a unique snake_case target_location_id (e.g., 'sworinta_v' or 'rebel_outpost'), and provide a clean name in target_location_name (e.g., 'Orbit of Sworinta V' or 'Rebel Comm Outpost'). The system will automatically register and generate it!\n"
-            "- FLAGSHIP MOVEMENT & SECTOR TRANSIT: If the player orders the Star Destroyer (The Broken Sunrise) to change sectors or jump to a new orbit/coordinates (e.g., 'move the ship to the Asteroid Field', 'hyperspace jump to Sith Beacon', or 'orbit Sworinta V'), you MUST add a custom state update in engine_mutations: \"custom_state_updates\": {\"The_Broken_Sunrise.Current Sector\": \"New Sector Name\"} (e.g., \"Deep Rim Asteroid Field\", \"Sith Beacon Anomaly\", or \"Sworinta V Orbit\") so the ship's position updates on the tactical map!\n\n"
-            "OUTPUT FORMAT:\n"
-            "You MUST respond ONLY with a valid JSON block matching this structure:\n"
-            "{\n"
-            "  \"valid\": true,\n"
-            "  \"rejection_reason\": null,\n"
-            "  \"action_type\": \"move\" | \"use\" | \"dialogue\" | \"combat\" | \"other\",\n"
-            "  \"skill_check\": {\n"
-            "    \"required\": false,\n"
-            "    \"skill\": \"Computers\" | \"Perception\" | ... | null,\n"
-            "    \"difficulty\": 1 (Easy) to 5 (Formidable)\n"
-            "  },\n"
-            "  \"movement\": {\n"
-            "    \"transit\": false,\n"
-            "    \"target_location_id\": \"quarters\" | \"hangar\" | ... | null,\n"
-            "    \"target_location_name\": \"Name of new location\" | null\n"
-            "  },\n"
-            "  \"time_elapsed_minutes\": 1,\n"
-            "  \"background_tasks\": [],\n"
-            "  \"engine_mutations\": {\n"
-            "    \"wounds_change\": 0,\n"
-            "    \"strain_change\": 0,\n"
-            "    \"credits_change\": 0,\n"
-            "    \"item_added\": null,\n"
-            "    \"item_removed\": null,\n"
-            "    \"custom_state_updates\": {}\n"
-            "  },\n"
-            "  \"detected_npc\": {\n"
-            "    \"name\": \"Name_With_Underscores\",\n"
-            "    \"role\": \"Role / Job Title\",\n"
-            "    \"faction\": \"Faction Name\"\n"
-            "  } | null\n"
-            "}"
-        )
+        system_instruction = self.prompts.get("parser", "")
 
         prompt = (
             f"LOCATION DATA:\n{json.dumps(location_data, indent=2)}\n\n"
@@ -325,22 +300,7 @@ class LLMAgent:
         Generates atmospheric narrative descriptions based on the command outcome.
         Returns a string (stream=False) or a generator of text chunks (stream=True).
         """
-        system_instruction = (
-            "You are the DungeonOfTheStars Narrator, writing descriptions for a Star Wars themed tactical text adventure.\n"
-            "Write lean, punchy prose: short sentences, plain direct language, no padding or piled-up adjectives. Gritty, brutal, military tone suited to a wartime Imperial Navy in the Outer Rim. You may depict violence, injury, death, and moral ambiguity directly and without sanitization or euphemism when the scene calls for it. Do not use flowery, overly dramatic, or verbose language.\\n"
-            "Incorporate FFG dice results (Success/Failure, Advantage/Threat, Triumph/Despair) into in-universe outcomes.\n"
-            "CRITICAL RULES - DIRECT EXECUTION & DIALOGUE:\n"
-            "- DIRECT RESPONSE AND DIALOGUE: Your narrative MUST directly address and answer the player's immediate statement, command, or query. If the player asks a question to Kross or any NPC, that NPC MUST answer directly in dialogue. Never write a generic response that ignores or skips over the dialogue. If the player says something, NPCs must respond directly to what was said.\n"
-            "- The Commodore's words, announcements, physical attacks, and orders are ABSOLUTE CANON. Never retcon or ignore them. If the Commodore fires a weapon at someone, do not make the NPC 'calmly step aside' or lecture the Commodore unless a mechanical dice failure occurred. If the Commodore gives an order or makes an announcement, NPCs must react realistically without inventing fake messages from Central Command that contradict the player!\n"
-            "- DIALOGUE SPEAKER HEADERS (MANDATORY): Whenever any NPC speaks, write their dialogue as a chat-style line in this EXACT format - the speaker FULL NAME IN CAPS inside angle brackets on its own line, then the spoken words on the NEXT line (never same line, never quotes or underscores around the name). Example:\n<COMMANDER VANDAR KROSS>\nShields holding at eighty percent, sir!\nIf several characters speak, give each its own <NAME> header plus its spoken line. Do not bury speech inside narration paragraphs.\n"
-            "- SECRECY OF THE BEACON: The crew, officers (including Commander Kross), and all external factions believe the signal is an ancient distress call from a derelict warship. Only the Commodore (player) and the Inquisitor know it is an ancient Sith beacon. Ensure all dialogues and crew reactions reflect this secrecy (e.g., crew members speaking about salvaging a derelict warship, while the Inquisitor speaks to you privately or via encrypted channels about the true nature of the Sith artifact).\n"
-            "- Never mention Earth or real-world geography/history.\n"
-            "- Do not repeat background information or location descriptions if they have not changed. Focus on the action itself and answering the query.\n"
-            "- The story characters (and narration) must NEVER roll dice, mention dice, refer to dice, see stats, or mention tabletop mechanics. All dice rolls and rules happen outside the narrative world. Translate the dice outcomes purely into environmental events, mechanical failures, tactical changes, or physical reactions.\n"
-            "- Advantage/Threat represent positive/negative side-effects. Triumph is a major boon, Despair is a major complication.\n"
-            "- OUTPUT FORMAT: Write ONLY the narrative prose. Never repeat the world-state, dice results, history, or any prompt section header. No JSON, no bullet lists, no meta-commentary.\n"
-            "LENGTH: 1-3 short paragraphs (roughly 60-140 words). One clear scene beat per turn. Let actions and dialogue carry it. Do not pad to reach a length."
-        )
+        system_instruction = self.prompts.get("narrator", "")
         # Load campaign plot if available to guide acts and narrative branches
         campaign_context = ""
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -429,13 +389,7 @@ class LLMAgent:
         Generates a single-line bullet point summarizing the narrative consequence
         of the turn to be appended to the Chronicle.
         """
-        system_instruction = (
-            "You are the Campaign Archivist. Write a single, brief, factual bullet point "
-            "summarizing the player's action and the outcome. Focus on plot progression, "
-            "NPC interactions, and item discoveries. Do not write atmospheric prose.\n"
-            "Format: '* [Brief summary of action and result]'\n"
-            "Example: '* Met Chief Engineer Titus Thul in Engineering; learned hyperdrive is offline.'"
-        )
+        system_instruction = self.prompts.get("summarizer", self.prompts.get("archive", ""))
 
         prompt = (
             f"PLAYER ACTION: {command}\n"

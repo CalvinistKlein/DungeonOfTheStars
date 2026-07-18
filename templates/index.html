@@ -566,7 +566,37 @@
             border-color: var(--md-sys-color-primary);
         }
 
+        .prompt-block {
+            margin-bottom: 16px;
+        }
+
+        .prompt-block .form-label {
+            margin-bottom: 6px;
+        }
+
+        .form-textarea {
+            width: 100%;
+            min-height: 120px;
+            background: var(--md-sys-color-surface-container);
+            border: 1px solid var(--md-sys-color-outline-variant);
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: var(--md-sys-color-on-surface);
+            font-family: 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            outline: none;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        .form-textarea:focus {
+            border-color: var(--md-sys-color-primary);
+        }
+
         .form-checkbox {
+
+
             display: flex;
             align-items: center;
             gap: 12px;
@@ -929,6 +959,7 @@
                 <button class="btn" id="btn-map">Sector Map</button>
                 <button class="btn" id="btn-ship">Ship Schematic</button>
                 <button class="btn" id="btn-settings">Console Config</button>
+                <button class="btn" id="btn-prompts">Edit Prompts</button>
                 <button class="btn" id="btn-save">Manual Save</button>
                 <button class="btn" id="btn-saves">Saved Games</button>
                 <button class="btn btn-restart" id="btn-restart">Reset Campaign</button>
@@ -1032,10 +1063,46 @@
         </div>
     </div>
 
+    <!-- Prompts Modal -->
+    <div class="overlay" id="overlay-prompts">
+        <div class="modal" style="max-width: 860px; width: 94%;">
+            <div class="modal-header">
+                <div>Model Prompts</div>
+                <button class="modal-close" data-close="overlay-prompts">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 20px;">
+                <p style="margin: 0 0 14px; font-size: 0.85rem; color: var(--md-sys-color-on-surface-variant); line-height: 1.45;">
+                    Edit the system prompts sent to each model. Changes apply live (no restart). The <b>Parser</b> turns your command into game actions, the <b>Narrator</b> writes the story, the <b>Director</b> picks which NPCs are in-scene, and <b>Memory</b> consolidates NPC recall.
+                </p>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-parser">Parser (command &rarr; JSON)</label>
+                    <textarea class="form-textarea" id="prompt-parser" rows="7"></textarea>
+                </div>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-narrator">Narrator (storytelling)</label>
+                    <textarea class="form-textarea" id="prompt-narrator" rows="9"></textarea>
+                </div>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-director">Director (in-scene NPC selection)</label>
+                    <textarea class="form-textarea" id="prompt-director" rows="5"></textarea>
+                </div>
+                <div class="prompt-block">
+                    <label class="form-label" for="prompt-memory">Memory (NPC consolidation)</label>
+                    <textarea class="form-textarea" id="prompt-memory" rows="5"></textarea>
+                </div>
+                <div id="prompts-status" style="font-size: 0.82rem; min-height: 1.1em; margin: 4px 0 10px;"></div>
+                <div class="modal-actions">
+                    <button class="btn" id="btn-prompts-reset">Reset to Defaults</button>
+                    <button class="btn btn-primary" id="btn-prompts-save">Apply Prompts</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Campaign Launcher Modal -->
     <div class="overlay active" id="overlay-launcher">
         <div class="modal" id="launcher-modal">
-            <div class="modal-header" style="justify-content: center;">
+        <div class="modal-header" style="justify-content: center;">
                 <div style="font-size: 1.2rem;">Dungeon of the Stars Operations Gateway</div>
             </div>
             <div class="modal-body" style="text-align: center; padding: 32px 24px;">
@@ -1370,6 +1437,71 @@
         document.getElementById('btn-restart').addEventListener('click', () => {
             if (confirm("Reset current campaign? All state files and logs will be restored to defaults.")) {
                 openOverlay('overlay-launcher');
+            }
+        });
+
+        // Prompts editor
+        document.getElementById('btn-prompts').addEventListener('click', async () => {
+            openOverlay('overlay-prompts');
+            try {
+                const res = await fetch('/api/prompts');
+                const p = await res.json();
+                document.getElementById('prompt-parser').value = p.parser || '';
+                document.getElementById('prompt-narrator').value = p.narrator || '';
+                document.getElementById('prompt-director').value = p.director || '';
+                document.getElementById('prompt-memory').value = p.memory || '';
+                document.getElementById('prompts-status').textContent = '';
+            } catch (err) {
+                document.getElementById('prompts-status').textContent = 'Failed to load prompts.';
+            }
+        });
+
+        document.getElementById('btn-prompts-save').addEventListener('click', async () => {
+            const status = document.getElementById('prompts-status');
+            status.textContent = 'Saving...';
+            const payload = {
+                parser: document.getElementById('prompt-parser').value,
+                narrator: document.getElementById('prompt-narrator').value,
+                director: document.getElementById('prompt-director').value,
+                memory: document.getElementById('prompt-memory').value
+            };
+            try {
+                const res = await fetch('/api/prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                status.textContent = (data.status === 'ok') ? '✓ Prompts applied live.' : ('Error: ' + (data.message || 'unknown'));
+            } catch (err) {
+                status.textContent = 'Failed to save prompts.';
+            }
+        });
+
+        document.getElementById('btn-prompts-reset').addEventListener('click', async () => {
+            if (!confirm('Reset all prompts to the shipped defaults?')) return;
+            const status = document.getElementById('prompts-status');
+            status.textContent = 'Resetting...';
+            try {
+                const res = await fetch('/api/prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parser: '', narrator: '', director: '', memory: '' })
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    const r2 = await fetch('/api/prompts');
+                    const p = await r2.json();
+                    document.getElementById('prompt-parser').value = p.parser || '';
+                    document.getElementById('prompt-narrator').value = p.narrator || '';
+                    document.getElementById('prompt-director').value = p.director || '';
+                    document.getElementById('prompt-memory').value = p.memory || '';
+                    status.textContent = '✓ Reset to defaults.';
+                } else {
+                    status.textContent = 'Error: ' + (data.message || 'unknown');
+                }
+            } catch (err) {
+                status.textContent = 'Failed to reset prompts.';
             }
         });
 

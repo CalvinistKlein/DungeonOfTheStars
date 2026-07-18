@@ -145,6 +145,19 @@ def _strip_think(text):
     return text
 
 
+def _load_prompts():
+    base = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(base, "prompts.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+_PROMPTS = _load_prompts()
+
+
 def director_select(scene_text, agent, model=None):
     """
     Ask the director model which registered NPCs are physically in-scene.
@@ -159,17 +172,7 @@ def director_select(scene_text, agent, model=None):
         f"  - {nid}: {r['name']} ({r['role']})"
         for nid, r in candidates.items()
     )
-    prompt = (
-        "You are the Scene Director for a Star Wars tactical RPG. "
-        "The NPCs listed in the ROSTER are all aboard the ship and eligible to appear. "
-        "Given the SCENE description, output ONLY a JSON array of the NPC ids that are "
-        "PHYSICALLY PRESENT in THIS specific scene right now (e.g. on the bridge, in the "
-        "room, or directly interacting). Exclude the player (the Commodore). If none are "
-        "present, output []. Respond with the JSON array and nothing else.\n\n"
-        f"ROSTER (aboard, eligible):\n{roster}\n\n"
-        f"SCENE:\n{scene_text}\n\n"
-        "JSON array of in-scene NPC ids:"
-    )
+    prompt = _PROMPTS.get("director", "").format(candidates=roster, scene_text=scene_text)
     try:
         raw = agent.ask_model(prompt, model, num_predict=200)
     except Exception as e:
@@ -198,17 +201,7 @@ def compact_brain(npc_id, agent, model=None):
     """
     model = model or getattr(agent, "brain_model", None) or agent.narrator_model
     current = load_brain(npc_id)
-    prompt = (
-        "You are a memory consolidator for an NPC in a Star Wars RPG. "
-        "Given the NPC's CURRENT memory and the NEW events from the latest turn, "
-        "produce an UPDATED, compact memory in Markdown (at most 12 short bullet "
-        "lines or sections). PRESERVE: identity, relationships, debts, allegiances, "
-        "attitudes, current location, and any new concrete facts. DROP transient "
-        "noise and duplicated turn-event headers. Output ONLY the updated memory, "
-        "no commentary or code fences.\n\n"
-        f"CURRENT MEMORY:\n{current}\n\n"
-        "Produce the updated compact memory now:"
-    )
+    prompt = _PROMPTS.get("memory", "").format(current=current)
     try:
         updated = agent.ask_model(prompt, model, num_predict=1500)
         updated = _strip_think(updated)
